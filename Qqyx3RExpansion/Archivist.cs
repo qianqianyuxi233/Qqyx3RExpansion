@@ -34,10 +34,6 @@ namespace Qqyx3RExpansion;
 ///         可抄录卷轴（对应「祈祷书 / Prayerbook」与「抄写卷轴」设定）
 ///
 /// 每日法术位表是本职业自建的（与牧师表不同：卷宗学者 1 级就有 0 环 3 / 1 环 2）。
-///
-/// 参考实现：
-///   基础职业骨架 —— Prestige-Plus 的 Blueprint\Gunslinger\GunslingerMain.cs
-///   施法职业     —— 同目录 Blueprint\PrestigeClass\ExaltedEvangelist.cs（法术书 + 法术位表）
 /// </summary>
 internal static class Archivist {
 
