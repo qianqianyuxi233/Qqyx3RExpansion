@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自定义 ILRepack 合并逻辑。
+
+  存在此文件时，ILRepack.Lib.MSBuild.Task 包自带的默认 ILRepack / CleanReferenceCopyLocalPaths
+  target 会因条件 !Exists('$(ILRepackTargetsFile)') 而不执行，仅保留 <ILRepack> 任务的注册。
+
+  注意：target 名故意不叫 ILRepack —— 包在 Import 本文件之后还会定义一个同名的 ILRepack target，
+  MSBuild 中同名 target 以后定义者为准，若同名会导致本文件被静默覆盖、合并完全不发生。
+
+  作用：把 BlueprintCore.dll 合并进 MyWrathMod.dll，使最终产物只有一个 dll，
+  避免与其他同样携带 BlueprintCore 的 mod 发生版本冲突。
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="MergeBlueprintCore" AfterTargets="Build" Condition="'$(IsCrossTargetingBuild)' != 'true'">
+    <ItemGroup>
+      <!-- 第一项必须是主程序集 -->
+      <InputAssemblies Include="$(OutputPath)$(AssemblyName).dll" />
+      <InputAssemblies Include="$(OutputPath)BlueprintCore.dll" />
+    </ItemGroup>
+
+    <Error Condition="!Exists('$(OutputPath)BlueprintCore.dll')" Text="找不到 $(OutputPath)BlueprintCore.dll，无法合并 BlueprintCore。" />
+
+    <Message Text="Merging: @(InputAssemblies) -> $(OutputPath)$(AssemblyName).dll" Importance="High" />
+
+    <ILRepack
+      Parallel="true"
+      Internalize="true"
+      InternalizeExclude="$(AssemblyName)"
+      InputAssemblies="@(InputAssemblies)"
+      TargetKind="Dll"
+      LibraryPath="$(OutputPath)"
+      OutputFile="$(OutputPath)$(AssemblyName).dll" />
+  </Target>
+
+</Project>

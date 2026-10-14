@@ -1,0 +1,12 @@
+{
+  "Id": "Qqyx3RExpansion",
+  "DisplayName": "qqyx的3r扩展",
+  "Author": "qqyx",
+  "Version": "1.0.0",
+  "ManagerVersion": "0.32.4",
+  "Requirements": [ "TabletopTweaks-Core" ],
+  "AssemblyName": "Qqyx3RExpansion.dll",
+  "EntryMethod": "Qqyx3RExpansion.Main.Load",
+  "HomePage": "",
+  "Repository": ""
+}

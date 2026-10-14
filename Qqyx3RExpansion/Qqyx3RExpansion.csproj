@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk" InitialTargets="GenerateCustomPropsFile">
+	<Import Project="$(SolutionDir)GamePath.props" Condition="Exists('$(SolutionDir)GamePath.props')" />
+
+	<PropertyGroup>
+		<TargetFramework>net481</TargetFramework>
+		<AssemblyName>Qqyx3RExpansion</AssemblyName>
+		<Description>qqyx's 3.5 Rules Expansion</Description>
+		<Version>1.0.0</Version>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>Qqyx3RExpansion</RootNamespace>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<RestoreAdditionalProjectSources>https://api.nuget.org/v3/index.json</RestoreAdditionalProjectSources>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<WrathData>$(LocalAppData)Low\Owlcat Games\Pathfinder Wrath Of The Righteous</WrathData>
+	</PropertyGroup>
+	<ItemGroup>
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\Unity*.dll" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\Core*.dll" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\Owlcat*.dll" Publicize="true" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\Assembly-CSharp.dll*" Publicize="true" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\UnityModManager\UnityModManager.dll*" Publicize="true" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\Newtonsoft.Json.dll*" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\UniRx.dll*" Private="false" />
+		<Reference Include="$(WrathInstallDir)\Wrath_Data\Managed\UnityModManager\0Harmony.dll*" />
+		<!-- TabletopTweaks-Core 是本 mod 的前置：用它的 MetamagicExtention 加新超魔、SpellTools 遍历法术 -->
+		<Reference Include="TabletopTweaks-Core">
+			<HintPath>$(WrathInstallDir)\Mods\TabletopTweaks-Core\TabletopTweaks-Core.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="Info.json" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="LocalizedStrings.json" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+	<!-- ILRepack 合并逻辑在 ILRepack.targets 中定义，以兼容 dotnet CLI 构建 -->
+
+	<Target Name="Deploy" AfterTargets="MergeBlueprintCore">
+		<ItemGroup>
+			<Files Include="$(TargetDir)\**\*.*" />
+			<Files Remove="$(TargetDir)\**\*.dll" />
+			<Files Remove="$(TargetDir)\**\*.pdb" />
+			<Files Remove="$(TargetDir)\**\UnityModManager.xml" />
+			<Files Include="$(TargetDir)\**\$(AssemblyName).dll" />
+			<Files Include="$(TargetDir)\**\$(AssemblyName).pdb" />
+			<ToDelete Include="$(TargetDir)\**\*.*" />
+			<ToDelete Remove="@(Files)" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(Files)" DestinationFiles="@(Files->'$(WrathInstallDir)\Mods\$(AssemblyName)\%(RecursiveDir)%(Filename)%(Extension)')" />
+		<Delete Files="@(ToDelete)" />
+		<ZipDirectory SourceDirectory="$(MSBuildProjectDirectory)\$(OutputPath)" DestinationFile="$(MSBuildProjectDirectory)\$(OutputPath)\..\$(AssemblyName)-$(Version).zip" Overwrite="true" />
+	</Target>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" IncludeAssets="build; contentfiles" Version="0.4.2" PrivateAssets="all" />
+		<PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.48" PrivateAssets="all" />
+		<PackageReference Include="WW-Blueprint-Core" Version="*-*" />
+		<PackageReference Include="MicroUtils.HarmonyAnalyzers" IncludeAssets="runtime; build; native; contentfiles; analyzers" Version="*-*" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Unity.Analyzers" Version="1.28.0" PrivateAssets="all" />
+	</ItemGroup>
+	<Target Name="GenerateCustomPropsFile" Condition="$(WrathInstallDir) == ''">
+		<Exec Command="findstr /C:&quot;Mono path[0]&quot; &quot;$(WrathData)\Player.log&quot;" IgnoreExitCode="true" ConsoleToMSBuild="true">
+			<Output TaskParameter="ExitCode" PropertyName="ExitCode" />
+			<Output TaskParameter="ConsoleOutput" PropertyName="MonoPathLine" />
+		</Exec>
+
+		<PropertyGroup>
+			<MonoPathRegex>^Mono path\[0\] = '(.*?)/Wrath_Data/Managed'$</MonoPathRegex>
+		</PropertyGroup>
+
+		<PropertyGroup>
+			<WrathInstallDir>$([System.Text.RegularExpressions.Regex]::Match($(MonoPathLine), $(MonoPathRegex)).Groups[1].Value)</WrathInstallDir>
+		</PropertyGroup>
+
+		<WriteLinesToFile File="$(SolutionDir)GamePath.props" Lines="&lt;Project xmlns='http://schemas.microsoft.com/developer/msbuild/2003'&gt;
+	&lt;PropertyGroup&gt;
+		&lt;WrathInstallDir&gt;$(WrathInstallDir)&lt;/WrathInstallDir&gt;
+	&lt;/PropertyGroup&gt;
+&lt;/Project&gt;" Overwrite="true" Encoding="utf-8" />
+	</Target>
+	<Target Name="DeleteCustomPropsFile" BeforeTargets="Clean">
+		<Delete Files="$(SolutionDir)GamePath.props" />
+	</Target>
+</Project>
