@@ -7,6 +7,6 @@
   "Requirements": [ "TabletopTweaks-Core" ],
   "AssemblyName": "Qqyx3RExpansion.dll",
   "EntryMethod": "Qqyx3RExpansion.Main.Load",
-  "HomePage": "",
-  "Repository": ""
+  "HomePage": "https://github.com/qianqianyuxi233/Qqyx3RExpansion",
+  "Repository": "https://raw.githubusercontent.com/qianqianyuxi233/Qqyx3RExpansion/main/Repository.json"
 }
