@@ -26,6 +26,8 @@ internal static class FeatPools {
     private const string BasicFeatSelectionGuid = "247a4068296e8be42890143f451b4b45";
     /// <summary>Classes/Wizard/WizardFeatSelection —— 法师奖励专长池</summary>
     private const string WizardFeatSelectionGuid = "8c3102c2ff3b69444b139a98521a4899";
+    /// <summary>Classes/Fighter/FighterFeatSelection —— 战士奖励专长池（原版 155 项）</summary>
+    private const string FighterFeatSelectionGuid = "41c8486641f7d6d4283ca9dae4147a9f";
 
     /// <summary>登记进普通专长池。</summary>
     internal static void AddToBasicFeats(params Blueprint<BlueprintFeatureReference>[] feats) {
@@ -49,5 +51,17 @@ internal static class FeatPools {
             .Configure();
 
         Main.Log?.Log($"[专长池] 已把 {feats.Length} 项登记进 WizardFeatSelection（法师奖励专长）");
+    }
+
+    /// <summary>登记进战士奖励专长池。</summary>
+    internal static void AddToFighterFeats(params Blueprint<BlueprintFeatureReference>[] feats) {
+        if (feats == null || feats.Length == 0) return;
+
+        FeatureSelectionConfigurator
+            .For(BlueprintTool.GetRef<BlueprintFeatureSelectionReference>(FighterFeatSelectionGuid))
+            .AddToAllFeatures(feats)
+            .Configure();
+
+        Main.Log?.Log($"[专长池] 已把 {feats.Length} 项登记进 FighterFeatSelection（战士奖励专长）");
     }
 }

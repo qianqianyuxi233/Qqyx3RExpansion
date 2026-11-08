@@ -8,6 +8,7 @@ using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes.Spells;
 using Kingmaker.Blueprints.Items.Ecnchantments;
 using Kingmaker.Blueprints.Items.Weapons;
+using Kingmaker.Designers.EventConditionActionSystem.Actions;
 using Kingmaker.ElementsSystem;
 using Kingmaker.EntitySystem.Stats;
 using Kingmaker.Enums;
@@ -21,6 +22,7 @@ using Kingmaker.UnitLogic.Buffs.Blueprints;
 using Kingmaker.UnitLogic.Commands.Base;
 using Kingmaker.UnitLogic.Mechanics;
 using Kingmaker.UnitLogic.Mechanics.Actions;
+using Kingmaker.UnitLogic.Mechanics.Conditions;
 using Kingmaker.UnitLogic.Mechanics.Components;
 using Kingmaker.Utility;
 
@@ -96,6 +98,11 @@ internal static class Darkfire {
     private const string WeaponTypeGuid = "04f6b89a7a994d8eac4471e23a544d41";
     private const string WeaponGuid = "4d90fb8a4d044f6fbaca964516c800d0";
     private const string BuffGuid = "175f348f1b054143bb85720f4a792b1c";
+    /// <summary>「秘火增幅版」黑暗之炎 buff —— 施法时身上有秘火蓄能则改挂这个（见 MysticFireRing.cs）</summary>
+    private const string MysticBuffGuid = "d802336fa70e4b688050e0335a9775b3";
+
+    /// <summary>秘火增幅的额外骰数（4d6）</summary>
+    private const int MysticExtraDice = 4;
     private const string SpellGuid = "112bfce98e5f4de2b1483a07851b8490";
 
     /// <summary>法术环数：牧师 3 环</summary>
@@ -182,10 +189,66 @@ internal static class Darkfire {
     /// 两个组件共用同一个 rank 槽（Default）＝施法者等级。
     /// </summary>
     private static void ConfigureBuff() {
-        BuffConfigurator.New("DarkfireBuff", BuffGuid)
+        // 普通版
+        ConfigureBuffVariant("DarkfireBuff", BuffGuid, 0);
+        // 秘火增幅版：命中动作里多一条 4d6（由秘火戒指触发，见 MysticFireRing.cs）
+        ConfigureBuffVariant("DarkfireBuffMystic", MysticBuffGuid, MysticExtraDice);
+    }
+
+    /// <summary>
+    /// 生成一个黑暗之炎 buff。<paramref name="extraDice"/> &gt; 0 时，在命中动作里
+    /// 额外追加一条 Nd6 火焰伤害 —— 因为 <c>ContextActionDealDamage</c> 会读
+    /// <c>Context.HasMetamagic</c>，这条额外伤害与法术本体一样吃强效 / 极效。
+    /// </summary>
+    private static void ConfigureBuffVariant(string blueprintName, string guid, int extraDice) {
+        var actions = new List<GameAction> {
+            new ContextActionDealDamage {
+                name = "$Darkfire$Damage",
+                m_Type = ContextActionDealDamage.Type.Damage,
+                DamageType = new DamageTypeDescription {
+                    Type = DamageType.Energy,
+                    Energy = DamageEnergyType.Fire,
+                },
+                Value = new ContextDiceValue {
+                    DiceType = DiceType.D6,
+                    DiceCountValue = new ContextValue {
+                        ValueType = ContextValueType.Rank,
+                        ValueRank = AbilityRankType.Default,
+                    },
+                    BonusValue = new ContextValue {
+                        ValueType = ContextValueType.Simple,
+                        Value = 0,
+                    },
+                },
+            },
+        };
+
+        if (extraDice > 0) {
+            actions.Add(new ContextActionDealDamage {
+                name = "$Darkfire$MysticDamage",
+                m_Type = ContextActionDealDamage.Type.Damage,
+                DamageType = new DamageTypeDescription {
+                    Type = DamageType.Energy,
+                    Energy = DamageEnergyType.Fire,
+                },
+                Value = new ContextDiceValue {
+                    DiceType = DiceType.D6,
+                    DiceCountValue = new ContextValue {
+                        ValueType = ContextValueType.Simple,
+                        Value = extraDice,
+                    },
+                    BonusValue = new ContextValue {
+                        ValueType = ContextValueType.Simple,
+                        Value = 0,
+                    },
+                },
+            });
+        }
+
+        BuffConfigurator.New(blueprintName, guid)
             .SetIcon(BlueprintTool.Get<BlueprintAbility>(FireBlastAbilityGuid).Icon)
-            .SetDisplayName(LocalizationTool.CreateString("Darkfire.Buff.Name", SpellName))
-            .SetDescription(LocalizationTool.CreateString("Darkfire.Buff.Description", BuffDescription))
+            .SetDisplayName(LocalizationTool.CreateString(blueprintName + ".Name", SpellName))
+            .SetDescription(LocalizationTool.CreateString(blueprintName + ".Description", BuffDescription))
             .OnConfigure(bp => {
                 bp.Components = new List<BlueprintComponent> {
                     // ① 把手槽里的武器（强制塞主手 + 锁定 + 原有物品回背包）
@@ -210,7 +273,7 @@ internal static class Darkfire {
                         m_Max = MaxDamageDice,
                         m_AffectedByIntensifiedMetamagic = true,
                     },
-                    // ④ 每次用这把武器命中 → 掷 rank 个 d6 火焰伤害
+                    // ④ 每次用这把武器命中 → 掷 rank 个 d6 火焰伤害（增幅版再多一条 Nd6）
                     new AddInitiatorAttackWithWeaponTrigger {
                         name = "$Darkfire$OnHit",
                         TriggerBeforeAttack = false,
@@ -219,27 +282,7 @@ internal static class Darkfire {
                         m_WeaponBlueprint = BlueprintTool.GetRef<BlueprintItemWeaponReference>(WeaponGuid),
                         ActionsOnInitiator = false,   // 伤害作用于被打的人，不是施法者
                         Action = new ActionList {
-                            Actions = new GameAction[] {
-                                new ContextActionDealDamage {
-                                    name = "$Darkfire$Damage",
-                                    m_Type = ContextActionDealDamage.Type.Damage,
-                                    DamageType = new DamageTypeDescription {
-                                        Type = DamageType.Energy,
-                                        Energy = DamageEnergyType.Fire,
-                                    },
-                                    Value = new ContextDiceValue {
-                                        DiceType = DiceType.D6,
-                                        DiceCountValue = new ContextValue {
-                                            ValueType = ContextValueType.Rank,
-                                            ValueRank = AbilityRankType.Default,
-                                        },
-                                        BonusValue = new ContextValue {
-                                            ValueType = ContextValueType.Simple,
-                                            Value = 0,
-                                        },
-                                    },
-                                },
-                            },
+                            Actions = actions.ToArray(),
                         },
                     },
                 }.ToArray();
@@ -248,6 +291,38 @@ internal static class Darkfire {
     }
 
     /// <summary>法术本体：标准动作、目标自己、持续 1 轮/等级。</summary>
+    /// <summary>
+    /// 1 轮/等级地挂上黑暗之炎 buff —— 固定时长必须写 <c>BonusValue</c>、
+    /// 骰子部分留 0（写进 <c>DiceCountValue</c> 会变成 0 秒，见 MODDING_NOTES §4.2）。
+    /// </summary>
+    private static ContextActionApplyBuff ApplyDarkfireBuff(string buffGuid, string actionName) {
+        return new ContextActionApplyBuff {
+            name = actionName,
+            m_Buff = BlueprintTool.GetRef<BlueprintBuffReference>(buffGuid),
+            Permanent = false,
+            UseDurationSeconds = false,
+            DurationValue = new ContextDurationValue {
+                Rate = DurationRate.Rounds,
+                DiceType = DiceType.Zero,
+                DiceCountValue = new ContextValue {
+                    ValueType = ContextValueType.Simple,
+                    Value = 0,
+                },
+                BonusValue = new ContextValue {
+                    ValueType = ContextValueType.Rank,
+                    ValueRank = AbilityRankType.Default,
+                },
+            },
+            DurationSeconds = 0f,
+            IsFromSpell = true,
+            IsNotDispelable = false,   // 原文「可消解」
+            ToCaster = true,           // 火焰出现在自己手上
+            AsChild = false,
+            SameDuration = false,
+            IgnoreParentContext = false,   // 必须继承施法上下文（超魔 / CL）
+        };
+    }
+
     private static void ConfigureSpell() {
         AbilityConfigurator.New("Darkfire", SpellGuid)
             // 只复制字段：Range = Personal、Animation = Self、AnimationStyle = CastActionSelf
@@ -274,31 +349,33 @@ internal static class Darkfire {
                 SavingThrowType = SavingThrowType.Unknown,
                 Actions = new ActionList {
                     Actions = new GameAction[] {
-                        new ContextActionApplyBuff {
-                            m_Buff = BlueprintTool.GetRef<BlueprintBuffReference>(BuffGuid),
-                            Permanent = false,
-                            UseDurationSeconds = false,
-                            // 1 轮/等级：固定部分写 BonusValue，骰子部分留 0
-                            // （把固定时长写进 DiceCountValue 会变成 0 秒，见 MODDING_NOTES 4.2）
-                            DurationValue = new ContextDurationValue {
-                                Rate = DurationRate.Rounds,
-                                DiceType = DiceType.Zero,
-                                DiceCountValue = new ContextValue {
-                                    ValueType = ContextValueType.Simple,
-                                    Value = 0,
-                                },
-                                BonusValue = new ContextValue {
-                                    ValueType = ContextValueType.Rank,
-                                    ValueRank = AbilityRankType.Default,
+                        // 身上带着秘火戒指的「秘火」蓄能 → 挂增幅版并消耗掉蓄能；否则挂普通版
+                        new Conditional {
+                            name = "$Darkfire$MysticCheck",
+                            ConditionsChecker = new ConditionsChecker {
+                                Conditions = new Condition[] {
+                                    new ContextConditionCasterHasFact {
+                                        name = "$Darkfire$HasMysticCharge",
+                                        m_Fact = BlueprintTool.GetRef<BlueprintUnitFactReference>(
+                                            MysticFireRing.ChargeBuffGuidPublic),
+                                    },
                                 },
                             },
-                            DurationSeconds = 0f,
-                            IsFromSpell = true,
-                            IsNotDispelable = false,   // 原文「可消解」
-                            ToCaster = true,           // 火焰出现在自己手上
-                            AsChild = false,
-                            SameDuration = false,
-                            IgnoreParentContext = false,   // 必须继承施法上下文（超魔 / CL）
+                            IfTrue = new ActionList {
+                                Actions = new GameAction[] {
+                                    ApplyDarkfireBuff(MysticBuffGuid, "$Darkfire$ApplyMystic"),
+                                    new ContextActionRemoveBuff {
+                                        name = "$Darkfire$ConsumeMystic",
+                                        m_Buff = BlueprintTool.GetRef<BlueprintBuffReference>(
+                                            MysticFireRing.ChargeBuffGuidPublic),
+                                    },
+                                },
+                            },
+                            IfFalse = new ActionList {
+                                Actions = new GameAction[] {
+                                    ApplyDarkfireBuff(BuffGuid, "$Darkfire$ApplyNormal"),
+                                },
+                            },
                         },
                     },
                 },

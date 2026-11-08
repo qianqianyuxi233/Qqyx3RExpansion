@@ -198,7 +198,7 @@ internal static class Archivist {
         var stillMind = ArchivistFeatures.ConfigureStillMind();
         var bonusFeat = ArchivistFeatures.ConfigureBonusFeat();
 
-        // 黑暗学识体系（只对恶魔生效，详见 DarkKnowledge.cs）
+        // 黑暗学识体系（对所有敌人生效，详见 DarkKnowledge.cs）
         DarkKnowledge.Configure();
 
         var progression = ConfigureProgression(

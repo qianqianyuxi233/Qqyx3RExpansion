@@ -24,7 +24,7 @@ namespace Qqyx3RExpansion;
 /// <summary>
 /// 黑暗学识：掷**一次** d20 + 知识（世界），按出目决定档位，然后给自己与 60 尺内的同伴
 /// 挂上对应档位的 buff（战术 / 影响 / 对手 / 预知，按卷宗学者等级解锁）。
-/// 所有 buff 的效果都只对恶魔生效（见 DarkKnowledge.DemonFactGuid）。
+/// 所有 buff 的效果对**所有敌人**生效。
 ///
 /// 档位：出目 &gt; 35 → 第 3 档（+3）；&gt; 25 → 第 2 档（+2）；&gt; 15 → 第 1 档（+1）；否则无效果。
 /// </summary>
@@ -107,7 +107,7 @@ public class ContextActionDarkKnowledge : ContextAction {
 }
 
 /// <summary>
-/// 对拥有指定 Fact（恶魔）的目标额外造成 Nd6 伤害。
+/// 攻击时额外造成 Nd6 伤害（对**所有目标**生效，不再限定敌人类型）。
 ///
 /// 游戏自带的 <c>DamageBonusAgainstFactOwner</c> 只能加**固定值**，
 /// 所以这里照它的写法（<c>evt.Initiator.Stats.AdditionalDamage.AddModifier</c>）做了个掷骰版：
@@ -118,19 +118,12 @@ public class ContextActionDarkKnowledge : ContextAction {
 [TypeId("3f8c1d2a5b6e4f7a9c0d1e2f3a4b5c6d")]
 public class DarkKnowledgeDamageDice : UnitFactComponentDelegate, IInitiatorRulebookHandler<RuleAttackWithWeapon> {
 
-    public BlueprintUnitFactReference m_CheckedFact;
     public int DiceCount = 1;
     public ModifierDescriptor Descriptor = ModifierDescriptor.UntypedStackable;
 
-    public BlueprintUnitFact CheckedFact => m_CheckedFact == null ? null : m_CheckedFact.Get();
-
     public void OnEventAboutToTrigger(RuleAttackWithWeapon evt) {
         if (evt.Weapon == null) return;
-
-        var fact = CheckedFact;
-        if (fact == null) return;
         if (evt.Target == null || evt.Target.Descriptor == null) return;
-        if (!evt.Target.Descriptor.HasFact(fact)) return;
 
         int roll = RulebookEvent.Dice.D(DiceCount, DiceType.D6);
         evt.AddTemporaryModifier(evt.Initiator.Stats.AdditionalDamage.AddModifier(

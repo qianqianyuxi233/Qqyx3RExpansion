@@ -8,6 +8,7 @@ using BlueprintCore.Blueprints.References;
 using BlueprintCore.Utils;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
+using Kingmaker.Designers.Mechanics.Buffs;
 using Kingmaker.Designers.Mechanics.Facts;
 using Kingmaker.ElementsSystem;
 using Kingmaker.Enums;
@@ -24,24 +25,18 @@ using Kingmaker.UnitLogic.Mechanics.Components;
 namespace Qqyx3RExpansion;
 
 /// <summary>
-/// 黑暗学识（重做版）——只对**恶魔**生效，只需要一次知识（世界）检定。
+/// 黑暗学识（重做版）——对**所有敌人**生效，只需要一次知识（世界）检定。
 ///
-///   1 级          能力本身；每日 3 次；变体「战术」（对恶魔攻击 +1/+2/+3）
+///   1 级          能力本身；每日 3 次；变体「战术」（攻击检定 +1/+2/+3）
 ///   3/6/9/12/15/18 级  每日次数各 +1（3 → 9 次）
-///   5 级          解锁「影响」（对抗恶魔的豁免 +1/+2/+3）
-///   8 级          解锁「对手」（对恶魔的伤害 +1d6/+2d6/+3d6）
-///   14 级         解锁「预知」（面对恶魔时 AC +1/+2/+3）
+///   5 级          解锁「影响」（豁免检定 +1/+2/+3）
+///   8 级          解锁「对手」（伤害 +1d6/+2d6/+3d6）
+///   14 级         解锁「预知」（AC +1/+2/+3）
 ///
 /// 施放：移动动作，掷**一次** d20 + 知识（世界），出目 &gt;15 / &gt;25 / &gt;35 对应三档，
 /// 给自己与 60 尺内的同伴挂上已解锁变体的对应档位 buff，持续 1 分钟。
 /// </summary>
 internal static class DarkKnowledge {
-
-    /// <summary>
-    /// 恶魔的 Fact —— 游戏 AI 的 <c>NoDemonConsideration</c> 判断「是否恶魔」用的就是它，
-    /// 所以这是普通单位的通用恶魔标记，不是陆军专用。
-    /// </summary>
-    internal const string DemonFactGuid = "dc960a234d365cb4f905bdc5937e623a";
 
     private const string ResourceGuid = "d64a9a9903004d8f9d40b2c11cc9b208";
     private const string AbilityGuid  = "9ed1e2a2aac14e30b16a37ce76495572";
@@ -91,12 +86,10 @@ internal static class DarkKnowledge {
     internal static readonly List<BlueprintFeature> TimesFeatures = new List<BlueprintFeature>();
 
     internal static void Configure() {
-        var demon = BlueprintTool.GetRef<BlueprintUnitFactReference>(DemonFactGuid);
-
-        MakeTactics(demon);
-        MakePuissance(demon);
-        MakeFoe(demon);
-        MakeForeknowledge(demon);
+        MakeTactics();
+        MakePuissance();
+        MakeFoe();
+        MakeForeknowledge();
 
         var resource = ConfigureResource();
         ConfigureAbilityFeatures(resource);
@@ -136,7 +129,7 @@ internal static class DarkKnowledge {
 
     // ---------- 四个变体 ----------
 
-    private static void MakeTactics(BlueprintUnitFactReference demon) {
+    private static void MakeTactics() {
         var tiers = new[] { 1, 2, 3 };
         for (int i = 0; i < 3; i++) {
             var name = "ArchivistDarkKnowledgeTactics" + tiers[i];
@@ -144,32 +137,12 @@ internal static class DarkKnowledge {
                 .SetDisplayName(LocalizationTool.CreateString(name + ".Name",
                     "黑暗学识：战术 +" + tiers[i]))
                 .SetDescription(LocalizationTool.CreateString(name + ".Description",
-                    "卷宗学者看穿了恶魔的战斗方式。对恶魔的攻击检定获得 +" + tiers[i] + " 加值。"))
+                    "卷宗学者看穿了敌人的战斗方式。攻击检定获得 +" + tiers[i] + " 加值。"))
                 .SetIcon(Icon)
-                .AddComponent(new AttackBonusAgainstFactOwner {
+                // 无条件攻击加值：照抄祝福术（BlessBuff）的 AddStatBonus(AdditionalAttackBonus) 写法
+                .AddComponent(new AddStatBonus {
                     name = "$" + name + "$Attack",
-                    m_CheckedFact = demon,
-                    AttackBonus = tiers[i],
-                    Descriptor = ModifierDescriptor.UntypedStackable,
-                })
-                .Configure();
-        }
-    }
-
-    private static void MakePuissance(BlueprintUnitFactReference demon) {
-        var tiers = new[] { 1, 2, 3 };
-        for (int i = 0; i < 3; i++) {
-            var name = "ArchivistDarkKnowledgePuissance" + tiers[i];
-            BuffConfigurator.New(name, PuissanceGuids[i])
-                .SetDisplayName(LocalizationTool.CreateString(name + ".Name",
-                    "黑暗学识：影响 +" + tiers[i]))
-                .SetDescription(LocalizationTool.CreateString(name + ".Description",
-                    "卷宗学者帮助同伴摆脱恶魔的影响。对抗恶魔的能力时，豁免检定获得 +"
-                    + tiers[i] + " 加值。"))
-                .SetIcon(Icon)
-                .AddComponent(new SavingThrowBonusAgainstFactMultiple {
-                    name = "$" + name + "$Save",
-                    m_Facts = new[] { demon },
+                    Stat = StatType.AdditionalAttackBonus,
                     Value = tiers[i],
                     Descriptor = ModifierDescriptor.UntypedStackable,
                 })
@@ -177,7 +150,28 @@ internal static class DarkKnowledge {
         }
     }
 
-    private static void MakeFoe(BlueprintUnitFactReference demon) {
+    private static void MakePuissance() {
+        var tiers = new[] { 1, 2, 3 };
+        for (int i = 0; i < 3; i++) {
+            var name = "ArchivistDarkKnowledgePuissance" + tiers[i];
+            BuffConfigurator.New(name, PuissanceGuids[i])
+                .SetDisplayName(LocalizationTool.CreateString(name + ".Name",
+                    "黑暗学识：影响 +" + tiers[i]))
+                .SetDescription(LocalizationTool.CreateString(name + ".Description",
+                    "卷宗学者帮助同伴摆脱敌人的影响。豁免检定获得 +"
+                    + tiers[i] + " 加值。"))
+                .SetIcon(Icon)
+                // 无条件的三豁免加值（提升抗力用的就是它）
+                .AddComponent(new BuffAllSavesBonus {
+                    name = "$" + name + "$Save",
+                    Descriptor = ModifierDescriptor.UntypedStackable,
+                    Value = tiers[i],
+                })
+                .Configure();
+        }
+    }
+
+    private static void MakeFoe() {
         var tiers = new[] { 1, 2, 3 };
         for (int i = 0; i < 3; i++) {
             var name = "ArchivistDarkKnowledgeFoe" + tiers[i];
@@ -185,12 +179,11 @@ internal static class DarkKnowledge {
                 .SetDisplayName(LocalizationTool.CreateString(name + ".Name",
                     "黑暗学识：对手 +" + tiers[i] + "d6"))
                 .SetDescription(LocalizationTool.CreateString(name + ".Description",
-                    "卷宗学者指引同伴攻击恶魔的弱点。对恶魔造成的伤害获得 +"
+                    "卷宗学者指引同伴攻击敌人的弱点。造成的伤害获得 +"
                     + tiers[i] + "d6 加值。"))
                 .SetIcon(Icon)
                 .AddComponent(new DarkKnowledgeDamageDice {
                     name = "$" + name + "$Damage",
-                    m_CheckedFact = demon,
                     DiceCount = tiers[i],
                     Descriptor = ModifierDescriptor.UntypedStackable,
                 })
@@ -198,7 +191,7 @@ internal static class DarkKnowledge {
         }
     }
 
-    private static void MakeForeknowledge(BlueprintUnitFactReference demon) {
+    private static void MakeForeknowledge() {
         var tiers = new[] { 1, 2, 3 };
         for (int i = 0; i < 3; i++) {
             var name = "ArchivistDarkKnowledgeForeknowledge" + tiers[i];
@@ -206,13 +199,14 @@ internal static class DarkKnowledge {
                 .SetDisplayName(LocalizationTool.CreateString(name + ".Name",
                     "黑暗学识：预知 +" + tiers[i]))
                 .SetDescription(LocalizationTool.CreateString(name + ".Description",
-                    "卷宗学者让同伴对恶魔的行动有所准备。面对恶魔时 AC 获得 +"
+                    "卷宗学者让同伴对敌人的行动有所准备。AC 获得 +"
                     + tiers[i] + " 洞察加值。"))
                 .SetIcon(Icon)
-                .AddComponent(new ACBonusAgainstFactOwner {
+                // 无条件 AC 加值（洞察）
+                .AddComponent(new AddStatBonus {
                     name = "$" + name + "$AC",
-                    m_CheckedFact = demon,
-                    Bonus = tiers[i],
+                    Stat = StatType.AC,
+                    Value = tiers[i],
                     Descriptor = ModifierDescriptor.Insight,
                 })
                 .Configure();
@@ -240,11 +234,11 @@ internal static class DarkKnowledge {
         };
 
         var abilityDesc = LocalizationTool.CreateString(name + ".Description",
-            "卷宗学者以对恶魔的禁忌研究支援同伴。以一个移动动作，他每天可以尝试 3 次"
+            "卷宗学者以对敌人的禁忌研究支援同伴。以一个移动动作，他每天可以尝试 3 次"
             + "黑暗学识（每 3 个卷宗学者等级再增加 1 次）。\n"
             + "使用后进行一次知识（世界）检定：结果超过 15、25、35 时，他以及 60 尺内的同伴"
             + "在接下来 1 分钟内获得对应强度的加值。\n"
-            + "此能力只对恶魔生效。");
+            + "这些加值对所有敌人生效。");
 
         AbilityConfigurator.New(name, AbilityGuid)
             .SetDisplayName(LocalizationTool.CreateString(name + ".Name", "黑暗学识"))
@@ -275,8 +269,8 @@ internal static class DarkKnowledge {
                 "卷宗学者获得「黑暗学识」能力：以一个移动动作，每天可以尝试 3 次"
                 + "（每 3 个卷宗学者等级再增加 1 次），进行一次知识（世界）检定；"
                 + "结果超过 15、25、35 时，他以及 60 尺内的同伴在接下来 1 分钟内获得对应强度的加值。"
-                + "此能力只对恶魔生效。\n\n"
-                + "战术：他以及同伴对恶魔的攻击检定获得 +1（超过 25 时 +2，超过 35 时 +3）。"))
+                + "这些加值对所有敌人生效。\n\n"
+                + "战术：他以及同伴的攻击检定获得 +1（超过 25 时 +2，超过 35 时 +3）。"))
             .SetIcon(Icon)
             .SetIsClassFeature()
             .AddFacts(facts)
@@ -285,19 +279,19 @@ internal static class DarkKnowledge {
 
         PuissanceFeature = UnlockFeature("ArchivistDarkKnowledgePuissance", PuissanceFeatureGuid,
             "黑暗学识（影响）",
-            "影响：他以及同伴在对抗恶魔的能力时，豁免检定获得 +1"
+            "影响：他以及同伴的豁免检定获得 +1"
             + "（超过 25 时 +2，超过 35 时 +3）。",
             facts);
 
         FoeFeature = UnlockFeature("ArchivistDarkKnowledgeFoe", FoeFeatureGuid,
             "黑暗学识（对手）",
-            "对手：他以及同伴对恶魔造成的伤害获得 +1d6"
+            "对手：他以及同伴造成的伤害获得 +1d6"
             + "（超过 25 时 +2d6，超过 35 时 +3d6）。",
             facts);
 
         ForeknowledgeFeature = UnlockFeature("ArchivistDarkKnowledgeForeknowledge", ForeknowledgeFeatureGuid,
             "黑暗学识（预知）",
-            "预知：他以及同伴面对恶魔时 AC 获得 +1 洞察加值"
+            "预知：他以及同伴的 AC 获得 +1 洞察加值"
             + "（超过 25 时 +2，超过 35 时 +3）。",
             facts);
     }

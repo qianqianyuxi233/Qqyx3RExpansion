@@ -89,8 +89,21 @@ public static class Main {
                 ConfigureSafely("额外驱散（3r）", ExtraTurning3R.Configure);
                 ConfigureSafely("神圣超魔", SacredMetamagic.Configure);
                 ConfigureSafely("神圣驱魔师", SacredExorcist.Configure);
-                ConfigureSafely("卷宗学者", Archivist.Configure);
                 ConfigureSafely("小物品（遗骨圣徽 / 夜枝）", QqyxItems.Configure);
+                ConfigureSafely("秘火戒指", MysticFireRing.Configure);
+                ConfigureSafely("新专长（影之刃 / 森林射手 / 突击尖兵）", QqyxFeats.Configure);
+                ConfigureSafely("塞壬的恩典", SirinesGrace.Configure);
+                ConfigureSafely("龙之力量", DraconicMight.Configure);
+                ConfigureSafely("信念", Conviction.Configure);
+                ConfigureSafely("群体信念", ConvictionMass.Configure);
+                ConfigureSafely("瑞雪之歌", Snowsong.Configure);
+                ConfigureSafely("腐囊强化", NecroticEmpowerment.Configure);
+                ConfigureSafely("荒野行者（进阶职业）", Wildrunner.Configure);
+
+                // ⚠ 卷宗学者必须放在**最后**：它注册时会把 8 张神术表合并成一张「卷宗表」
+                //    （SpellListConfigurator.New 的一次性快照）。若排在前面，
+                //    之后注册的法术就进不了卷宗学者的法术书。
+                ConfigureSafely("卷宗学者", Archivist.Configure);
 
             } catch (Exception e) {
                 Log.Log(string.Concat("Failed to initialize.", e));
