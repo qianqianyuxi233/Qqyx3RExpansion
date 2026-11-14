@@ -51,22 +51,42 @@ internal static class QqyxItems {
     private const string MetamagicRodIconSourceGuid = "a35044c76afa45c69f4baedf13ad5ac9";
 
     // ---------- 商人表 ----------
+    //
+    // ⚠ 只能挂到「真的被某个商人 NPC 引用」的表上。判定方法：
+    //    扫描全部 BlueprintUnit，找带 AddSharedVendor 组件的，取它的 m_m_Table。
+    //    原版有一批同名的 RE_ / WarCamp_RE 系列表是**孤儿**（没有任何 NPC 用），
+    //    例如 WarCamp_REVendorTableMagic / RE_Chapter5VendorTableMagic ——
+    //    往里加东西永远买不到。
+    //
+    // 珠宝类（戒指 / 项链 / 权杖）卖得出来的是这两张：
+    //   Jeweler_Chapter3VendorTable  ：第三章 Drezen 珠宝商（JewelerCapitalTrader）
+    //   GolemGold_VendorJewelry      ：第三章 Drezen 珠宝商（戈仑金）
+    // 提夫林杂货商（第三章）也卖魔法物品。
     private const string JewelerChapter3TableGuid = "9f959fcff8d929042b1be6311d209580";
-    private const string JewelerChapter5TableGuid = "fad4f5653f1d4943ad21a2dd85ee746b";
-    private const string MagicVendorChapter2TableGuid = "f02cf582e915ae343aa489f11dba42aa";
-    private const string MagicVendorChapter5TableGuid = "e1d21a0e6c9177d42a1b0fac1d6f8b21";
+    private const string GolemGoldJewelryTableGuid = "89567a21927845a0822d8bdaa724b8ce";
+    private const string VendorTieflingTableGuid = "d0a54c0af02eed44488c15108fed0433";
+
+    /// <summary>
+    /// 第一章保卫者之心的沃尔吉夫（Woljif，盗贼同伴）的商店。
+    /// 同一张表被 <c>Woljif_Companion</c> / <c>Woljif_DH_NotCompanion</c> / <c>Woljif_NPC</c>
+    /// 三个蓝图共用 —— 也就是说**他还没加入队伍时就能交易**，是本 mod 所有物品最早能买到的地方。
+    /// </summary>
+    private const string WoljifShopTableGuid = "a8c181f20ae888b4aa7227c2903207e4";
 
     internal static void Configure() {
         var holySymbol = ConfigureReliquaryHolySymbol();
         var nightstick = ConfigureNightstick();
 
-        // 遗骨圣徽是颈部奇物 → 给珠宝商（第三章、第五章）
+        // 遗骨圣徽是颈部奇物 → 珠宝商（第三章 Drezen 的两位）+ 第一章沃尔吉夫
         AddToVendor("JewelerChapter3", JewelerChapter3TableGuid, holySymbol);
-        AddToVendor("JewelerChapter5", JewelerChapter5TableGuid, holySymbol);
+        AddToVendor("GolemGoldJewelry", GolemGoldJewelryTableGuid, holySymbol);
+        AddToVendor("WoljifShop", WoljifShopTableGuid, holySymbol);
 
-        // 夜枝是权杖 → 给魔法物品商人（第二章、第五章）
-        AddToVendor("WarCampMagicVendor", MagicVendorChapter2TableGuid, nightstick);
-        AddToVendor("Chapter5MagicVendor", MagicVendorChapter5TableGuid, nightstick);
+        // 夜枝是权杖（魔法物品）→ 珠宝商 + 提夫林杂货商 + 第一章沃尔吉夫
+        AddToVendor("JewelerChapter3", JewelerChapter3TableGuid, nightstick);
+        AddToVendor("GolemGoldJewelry", GolemGoldJewelryTableGuid, nightstick);
+        AddToVendor("VendorTiefling", VendorTieflingTableGuid, nightstick);
+        AddToVendor("WoljifShop", WoljifShopTableGuid, nightstick);
 
         Main.Log?.Log("[物品] 已注册「遗骨圣徽」与「夜枝」，并挂到 4 张商人表");
     }

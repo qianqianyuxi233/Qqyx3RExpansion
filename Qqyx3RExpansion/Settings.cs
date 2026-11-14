@@ -19,6 +19,25 @@ public class Settings : UnityModManager.ModSettings {
     /// </summary>
     public bool AllowMythicDivineSpells = false;
 
+    /// <summary>
+    /// 是否启用「缺陷」系统。默认开启。
+    ///
+    /// <para>
+    /// 【玩家可见文案在 Main.OnGUI，不要把下面这些实现细节写进界面】
+    /// 缺陷系统要改三处**全局共享**的东西：角色共享的 1 级专长进度表
+    /// （<c>BasicFeatsProgression</c>）、<c>BlueprintRoot</c> 里对它的引用，
+    /// 以及延迟配置的应用时机（<c>LoadPackTOC</c> 上挂了 patch）。
+    /// 这比纯新增物品的风险高一个数量级。
+    /// </para>
+    ///
+    /// <para>
+    /// 如果怀疑它影响了别的功能（例如某个法术/武器不出伤害），
+    /// 把这个开关关掉重启即可**完全排除**：关掉后本 mod 不会碰任何原版共享蓝图，
+    /// 也不会挂 <c>LoadPackTOC</c> 的 patch。
+    /// </para>
+    /// </summary>
+    public bool EnableDrawbacks = true;
+
     public override void Save(UnityModManager.ModEntry modEntry) {
         Save(this, modEntry);
     }

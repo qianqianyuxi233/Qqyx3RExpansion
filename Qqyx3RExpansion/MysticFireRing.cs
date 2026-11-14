@@ -10,6 +10,7 @@ using BlueprintCore.Utils;
 using Kingmaker.Blueprints;
 using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Spells;
+using Kingmaker.Blueprints.Items.Components;
 using Kingmaker.Blueprints.Items.Equipment;
 using Kingmaker.Blueprints.Loot;
 using Kingmaker.Designers.Mechanics.EquipmentEnchants;
@@ -70,10 +71,15 @@ internal static class MysticFireRing {
     internal const string ChargeBuffGuidPublic = ChargeBuffGuid;
 
     // ---------- 商人表 ----------
-
+    //
+    // ⚠ 只能挂到「真的被某个商人 NPC 引用」的表上，判定方法见 QqyxItems 的注释。
+    //    原版的 Jeweler_Chapter5VendorTable / RE_Chapter5VendorTableMagic 都是孤儿表。
     private const string JewelerChapter3TableGuid  = "9f959fcff8d929042b1be6311d209580";
-    private const string JewelerChapter5TableGuid  = "fad4f5653f1d4943ad21a2dd85ee746b";
-    private const string MagicVendorChapter5TableGuid = "e1d21a0e6c9177d42a1b0fac1d6f8b21";
+    private const string GolemGoldJewelryTableGuid = "89567a21927845a0822d8bdaa724b8ce";
+    private const string VendorTieflingTableGuid   = "d0a54c0af02eed44488c15108fed0433";
+
+    /// <summary>第一章保卫者之心的沃尔吉夫（Woljif），见 QqyxItems 的说明。</summary>
+    private const string WoljifShopTableGuid = "a8c181f20ae888b4aa7227c2903207e4";
 
     /// <summary>额外伤害骰数。</summary>
     private const int ExtraDice = 4;
@@ -186,14 +192,21 @@ internal static class MysticFireRing {
             .SetIcon(icon)
             .SetCost(7500)
             .SetEnchantments(enchant.ToReference<BlueprintEquipmentEnchantmentReference>())
+            // ⚠ 物品触发的能力，动作类型由**物品**上的这个组件决定，不看能力蓝图的 ActionType
+            //   （AbilityData.GetDefaultActionType：SourceItem != null 时若没有该组件就强制 Standard）。
+            .AddComponent(new CustomItemAbilityActionType {
+                name = "$MysticFireRing$SwiftAction",
+                m_ActionType = UnitCommand.CommandType.Swift,
+            })
             .Configure();
 
-        // 7) 上架：第三章 / 第五章珠宝商，第五章魔法物品商人
+        // 7) 上架：第三章 Drezen 珠宝商两位 + 提夫林杂货商 + 第一章沃尔吉夫
         AddToVendor("JewelerChapter3", JewelerChapter3TableGuid, ItemGuid);
-        AddToVendor("JewelerChapter5", JewelerChapter5TableGuid, ItemGuid);
-        AddToVendor("Chapter5MagicVendor", MagicVendorChapter5TableGuid, ItemGuid);
+        AddToVendor("GolemGoldJewelry", GolemGoldJewelryTableGuid, ItemGuid);
+        AddToVendor("VendorTiefling", VendorTieflingTableGuid, ItemGuid);
+        AddToVendor("WoljifShop", WoljifShopTableGuid, ItemGuid);
 
-        Main.Log?.Log("[物品] 已注册「" + ItemName + "」并挂到 3 张商人表");
+        Main.Log?.Log("[物品] 已注册「" + ItemName + "」并挂到 4 张商人表");
     }
 
     /// <summary>

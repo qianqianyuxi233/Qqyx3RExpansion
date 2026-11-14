@@ -1,8 +1,11 @@
 using HarmonyLib;
+using System.Linq;
 using System.Reflection;
 using UnityModManagerNet;
 using UnityEngine;
 using Kingmaker.Blueprints.JsonSystem;
+using BlueprintCore.Utils;
+using Kingmaker.Blueprints.Classes;
 
 namespace Qqyx3RExpansion;
 
@@ -43,6 +46,12 @@ public static class Main {
         ModSettings.AllowMythicDivineSpells = GUILayout.Toggle(
             ModSettings.AllowMythicDivineSpells,
             " 允许抄录神话法术（把神术系道途法术并入卷宗表：天使 / 御衡者 / 阿兹拉塔 / 恶魔）");
+
+        GUILayout.Space(8);
+        GUILayout.Label("缺陷（Drawbacks）—— 可选房规");
+        ModSettings.EnableDrawbacks = GUILayout.Toggle(
+            ModSettings.EnableDrawbacks,
+            " 启用缺陷（创建角色时可以选择，每个缺陷换取一个奖励专长）");
 
         GUILayout.Space(4);
         GUILayout.Label("　改动会在下次启动游戏时生效。");
@@ -91,6 +100,13 @@ public static class Main {
                 ConfigureSafely("神圣驱魔师", SacredExorcist.Configure);
                 ConfigureSafely("小物品（遗骨圣徽 / 夜枝）", QqyxItems.Configure);
                 ConfigureSafely("秘火戒指", MysticFireRing.Configure);
+                ConfigureSafely("移位脚镯", AnkletOfTranslocation.Configure);
+                ConfigureSafely("猛禽面具", RaptorsMask.Configure);
+                ConfigureSafely("预知戒指", RingOfAnticipation.Configure);
+                // 缺陷系统会改全局共享的 1 级专长进度表，默认关闭，可在设置页开启。
+                if (ModSettings.EnableDrawbacks) {
+                    ConfigureSafely("缺陷（可选房规）", Drawbacks.Configure);
+                }
                 ConfigureSafely("新专长（影之刃 / 森林射手 / 突击尖兵）", QqyxFeats.Configure);
                 ConfigureSafely("塞壬的恩典", SirinesGrace.Configure);
                 ConfigureSafely("龙之力量", DraconicMight.Configure);
@@ -105,6 +121,12 @@ public static class Main {
                 //    之后注册的法术就进不了卷宗学者的法术书。
                 ConfigureSafely("卷宗学者", Archivist.Configure);
 
+                // 缺陷系统改的是「所有角色共享的 1 级进度表」，必须走 BlueprintCore 的延迟配置
+                // 才不会被后续蓝图加载覆盖。这里立刻应用一次，不依赖 LoadPackTOC 的调用顺序。
+                if (ModSettings.EnableDrawbacks) {
+                    ApplyDelayedBlueprints();
+                }
+
             } catch (Exception e) {
                 Log.Log(string.Concat("Failed to initialize.", e));
             }
@@ -116,6 +138,70 @@ public static class Main {
                 configure();
             } catch (Exception e) {
                 Log.Log(string.Concat("注册「", name, "」失败：", e.ToString()));
+            }
+        }
+    }
+
+    /// <summary>应用延迟配置（幂等：队列空时什么都不做）。</summary>
+    internal static void ApplyDelayedBlueprints() {
+        try {
+            BlueprintCore.Blueprints.CustomConfigurators.RootConfigurator<
+                Kingmaker.Blueprints.Root.BlueprintRoot,
+                BlueprintCore.Blueprints.Configurators.Root.RootConfigurator>.ConfigureDelayedBlueprints();
+            Log?.Log("[蓝图] ConfigureDelayedBlueprints 已调用");
+        } catch (System.Exception e) {
+            Log?.Log(string.Concat("应用延迟配置失败：", e.ToString()));
+            return;
+        }
+
+        // 诊断：确认缺陷的两个选择表真的写进了 1 级共享进度表。
+        try {
+            var prog = BlueprintTool.Get<BlueprintProgression>("5b72dd2ca2cb73b49903806ee8986325");
+            var lvl1 = prog.LevelEntries == null ? null : prog.LevelEntries.FirstOrDefault(e => e.Level == 1);
+            if (lvl1 == null) {
+                Log?.Log("[诊断] BasicFeatsProgression 找不到 Level=1 条目");
+                return;
+            }
+            var guids = lvl1.Features
+                .Where(f => f != null)
+                .Select(f => f.AssetGuid.ToString())
+                .ToList();
+            bool has1 = guids.Contains("c3f5daea7fd9415a9bf73af76960c2f8");
+            bool has2 = guids.Contains("5d29f1422bbf41f8a81b8de1bc300807");
+            Log?.Log("[诊断] 1 级条目共 " + guids.Count + " 个 Feature；缺陷槽 1=" + has1 + " 槽 2=" + has2);
+        } catch (System.Exception e) {
+            Log?.Log(string.Concat("[诊断] 读取 BasicFeatsProgression 失败：", e.Message));
+        }
+    }
+
+    /// <summary>
+    /// 应用 BlueprintCore 的**延迟配置**。
+    ///
+    /// <para>
+    /// 为什么需要这个：缺陷系统要改「所有角色共享的 1 级进度表」
+    /// （<c>Classes/Basic/BasicFeatsProgression</c>）以及 <c>BlueprintRoot</c> 里对它的引用。
+    /// 这两处如果在 <c>BlueprintsCache.Init</c> 期间直接改，会被后续的蓝图加载覆盖掉，
+    /// 表现为「在游戏里完全没生效」。
+    /// </para>
+    ///
+    /// <para>
+    /// 正确做法（照抄 Path of War 的武术实现）：用 <c>Configure(false)</c> 把修改排进
+    /// BlueprintCore 的延迟队列，等 <c>StartGameLoader.LoadPackTOC</c> 把蓝图包全部加载完之后，
+    /// 再统一应用。
+    /// </para>
+    /// </summary>
+    [HarmonyPatch(typeof(StartGameLoader))]
+    public static class StartGameLoader_Patch {
+        [HarmonyPostfix]
+        [HarmonyPatch("LoadPackTOC")]
+        public static void LoadPackTOC_Postfix() {
+            // 关闭缺陷系统时，完全不去动延迟配置队列，避免任何全局副作用。
+            if (!ModSettings.EnableDrawbacks) return;
+            try {
+                ApplyDelayedBlueprints();
+                Log?.Log("[蓝图] 已应用延迟配置");
+            } catch (Exception e) {
+                Log?.Log(string.Concat("应用延迟配置失败：", e.ToString()));
             }
         }
     }
