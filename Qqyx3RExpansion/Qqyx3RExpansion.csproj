@@ -5,7 +5,7 @@
 		<TargetFramework>net481</TargetFramework>
 		<AssemblyName>Qqyx3RExpansion</AssemblyName>
 		<Description>qqyx's 3.5 Rules Expansion</Description>
-		<Version>1.0.1</Version>
+		<Version>1.0.2</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<RootNamespace>Qqyx3RExpansion</RootNamespace>
