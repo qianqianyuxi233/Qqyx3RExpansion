@@ -12,8 +12,8 @@ namespace Qqyx3RExpansion;
 ///
 /// <para>
 /// <list type="bullet">
-/// <item><b>快速拔刀</b>：可以用迅捷动作进行拔刀术（战士奖励专长 + 普通专长）；</item>
-/// <item><b>快速拔刀（神话）</b>：前置快速拔刀，可以在自己的回合用自由动作进行拔刀术；</item>
+/// <item><b>快速拔刀术</b>：可以用迅捷动作进行拔刀术（战士奖励专长 + 普通专长）；</item>
+/// <item><b>快速拔刀术（神话）</b>：前置快速拔刀术，可以在自己的回合用自由动作进行拔刀术；</item>
 /// <item><b>拔刀专精</b>：拔刀术检定 +4（战士奖励专长）；</item>
 /// <item><b>拔刀专精（神话）</b>：前置拔刀专精，拔刀术检定额外 +6。</item>
 /// </list>
@@ -72,11 +72,11 @@ internal static class IaijutsuFeats {
         RegisterInFeatLists(quickDraw, mythicQuickDraw, weaponFocus, mythicWeaponFocus);
     }
 
-    // ---------- 快速拔刀 ----------
+    // ---------- 快速拔刀术 ----------
 
     private static BlueprintFeature ConfigureQuickDraw() {
         return FeatureConfigurator.New("QuickDraw", QuickDrawGuid)
-            .SetDisplayName(LocalizationTool.CreateString("QuickDraw.Name", "快速拔刀"))
+            .SetDisplayName(LocalizationTool.CreateString("QuickDraw.Name", "快速拔刀术"))
             .SetDescription(LocalizationTool.CreateString("QuickDraw.Description",
                 "你可以使用迅捷动作进行拔刀术。"))
             .SetIcon(Icon())
@@ -84,11 +84,11 @@ internal static class IaijutsuFeats {
             .Configure();
     }
 
-    // ---------- 快速拔刀（神话）----------
+    // ---------- 快速拔刀术（神话）----------
 
     private static BlueprintFeature ConfigureMythicQuickDraw(BlueprintFeature quickDraw) {
         return FeatureConfigurator.New("MythicQuickDraw", MythicQuickDrawGuid)
-            .SetDisplayName(LocalizationTool.CreateString("MythicQuickDraw.Name", "快速拔刀（神话）"))
+            .SetDisplayName(LocalizationTool.CreateString("MythicQuickDraw.Name", "快速拔刀术（神话）"))
             .SetDescription(LocalizationTool.CreateString("MythicQuickDraw.Description",
                 "你可以在自己的回合用自由动作进行拔刀术。"))
             .SetIcon(Icon())
@@ -137,14 +137,14 @@ internal static class IaijutsuFeats {
     private static void RegisterInFeatLists(
             BlueprintFeature quickDraw, BlueprintFeature mythicQuickDraw,
             BlueprintFeature weaponFocus, BlueprintFeature mythicWeaponFocus) {
-        // 战士奖励专长池：快速拔刀 + 拔刀专精
+        // 战士奖励专长池：快速拔刀术 + 拔刀专精
         FeatureSelectionConfigurator.For(
                 BlueprintTool.GetRef<Kingmaker.Blueprints.BlueprintFeatureSelectionReference>(
                     FighterFeatSelectionGuid))
             .AddToAllFeatures(quickDraw, weaponFocus)
             .Configure(false);
 
-        // 普通专长池：快速拔刀（通用专长）
+        // 普通专长池：快速拔刀术（通用专长）
         FeatureSelectionConfigurator.For(
                 BlueprintTool.GetRef<Kingmaker.Blueprints.BlueprintFeatureSelectionReference>(
                     BasicFeatSelectionGuid))

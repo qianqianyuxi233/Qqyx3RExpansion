@@ -8,7 +8,7 @@ using Kingmaker.UnitLogic.Commands.Base;
 namespace Qqyx3RExpansion;
 
 /// <summary>
-/// 让「快速拔刀」系列专长改写拔刀术能力的动作类型。
+/// 让「快速拔刀术」系列专长改写拔刀术能力的动作类型。
 ///
 /// <para>
 /// <b>为什么 patch 属性的 getter 而不是 <c>GetDefaultActionType</c></b>：

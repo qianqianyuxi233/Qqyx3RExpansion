@@ -122,14 +122,14 @@ public static class Main {
                 ConfigureSafely("卷宗学者", Archivist.Configure);
 
                 // 武士 是新的基础职业：先建拔刀术专长与拔刀术，再建职业本体。
-                ConfigureSafely("拔刀术专长（快速拔刀 / 拔刀专精，含神话版）", IaijutsuFeats.Configure);
+                ConfigureSafely("拔刀术专长（快速拔刀术 / 拔刀专精，含神话版）", IaijutsuFeats.Configure);
                 ConfigureSafely("拔刀术", Iaijutsu.Configure);
                 ConfigureSafely("武士（新基础职业）", OaSamurai.Configure);
-                // 拔刀师是进阶职业，前提要用到拔刀术与快速拔刀
+                // 拔刀师是进阶职业，前提要用到拔刀术与快速拔刀术
                 ConfigureSafely("拔刀师（进阶职业）", IaijutsuMaster.Configure);
 
                 // 延迟配置队列里既有缺陷系统（改共享的 1 级进度表），
-                // 也有拔刀师注册「快速拔刀」专长（改共享的普通专长表）。
+                // 也有拔刀师注册「快速拔刀术」专长（改共享的普通专长表）。
                 // 两者都必须在所有蓝图加载完成后统一应用一次，所以这里无条件调用；
                 // 队列为空时它是空操作（幂等）。
                 ApplyDelayedBlueprints();
@@ -203,7 +203,7 @@ public static class Main {
         [HarmonyPatch("LoadPackTOC")]
         public static void LoadPackTOC_Postfix() {
             // 延迟配置队列里既有缺陷系统（改共享的 1 级进度表），
-            // 也有拔刀师注册「快速拔刀」专长（改共享的普通专长表）。
+            // 也有拔刀师注册「快速拔刀术」专长（改共享的普通专长表）。
             // 所以这里不能再按缺陷开关直接 return —— 关闭缺陷时那批修改仍然要应用。
             try {
                 ApplyDelayedBlueprints();
