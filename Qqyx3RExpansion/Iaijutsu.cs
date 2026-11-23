@@ -105,23 +105,11 @@ internal static class Iaijutsu {
                 + "免疫偷袭的生物同样免疫这些伤害。"))
             .SetIcon(Icon())
             .OnConfigure(bp => {
-                // 重复使用能力时先移除旧 buff 再加新的 —— 每次都会重新触发 OnActivate 重新掷检。
+                // 重复使用能力时先移除旧 buff 再加新的，保证每次使用都是一份新的「1 轮」状态
                 bp.Stacking = StackingType.Replace;
             })
-            .AddComponent(new IaijutsuFocusDamage {
-                name = "$Iaijutsu$Damage",
-                // 拔刀师的两个特性：按「身上有没有这个特性」判断，
-                // 所以控制台/存档工具单独添加、或者其它途径获得，都能正常生效。
-                StrikeFromTheVoid = BlueprintTool.GetRef<BlueprintFeatureReference>(
-                    IaijutsuMaster.StrikeFromTheVoidGuid),
-                StrikeWithNoThought = BlueprintTool.GetRef<BlueprintFeatureReference>(
-                    IaijutsuMaster.StrikeWithNoThoughtGuid),
-                // 拔刀专精系列的检定加值（真正叠加发生在 IaijutsuFocusDamage.RollIfNeeded）
-                IaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
-                    IaijutsuFeats.WeaponFocusGuid),
-                MythicIaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
-                    IaijutsuFeats.MythicWeaponFocusGuid),
-            })
+            // 掷骰与加值判断都在 ContextActionIaijutsuFocus 里做，这里只负责伤害结算
+            .AddComponent(new IaijutsuFocusDamage { name = "$Iaijutsu$Damage" })
             .Configure();
     }
 
@@ -142,31 +130,17 @@ internal static class Iaijutsu {
                 SavingThrowType = SavingThrowType.Unknown,
                 Actions = new ActionList {
                     Actions = new GameAction[] {
-                        new ContextActionApplyBuff {
-                            name = "$Iaijutsu$ApplyBuff",
-                            m_Buff = BlueprintTool.GetRef<BlueprintBuffReference>(BuffGuid),
-                            Permanent = false,
-                            UseDurationSeconds = false,
-                            // 1 轮（6 秒）
-                            DurationValue = new ContextDurationValue {
-                                Rate = DurationRate.Rounds,
-                                DiceType = DiceType.Zero,
-                                DiceCountValue = new ContextValue {
-                                    ValueType = ContextValueType.Simple,
-                                    Value = 0,
-                                },
-                                BonusValue = new ContextValue {
-                                    ValueType = ContextValueType.Simple,
-                                    Value = 1,
-                                },
-                                m_IsExtendable = false,
-                            },
-                            DurationSeconds = 0f,
-                            IsFromSpell = false,
-                            IsNotDispelable = true,
-                            ToCaster = true,
-                            AsChild = false,
-                            SameDuration = false,
+                        new ContextActionIaijutsuFocus {
+                            name = "$Iaijutsu$Roll",
+                            Buff = BlueprintTool.GetRef<BlueprintBuffReference>(BuffGuid),
+                            StrikeFromTheVoid = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                                IaijutsuMaster.StrikeFromTheVoidGuid),
+                            StrikeWithNoThought = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                                IaijutsuMaster.StrikeWithNoThoughtGuid),
+                            IaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                                IaijutsuFeats.WeaponFocusGuid),
+                            MythicIaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                                IaijutsuFeats.MythicWeaponFocusGuid),
                         },
                     },
                 },
