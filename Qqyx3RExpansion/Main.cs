@@ -121,6 +121,10 @@ public static class Main {
                 //    之后注册的法术就进不了卷宗学者的法术书。
                 ConfigureSafely("卷宗学者", Archivist.Configure);
 
+                // OA武士 是新的基础职业：先建拔刀术（1 级特性引用它），再建职业本体。
+                ConfigureSafely("拔刀术", Iaijutsu.Configure);
+                ConfigureSafely("OA武士（新基础职业）", OaSamurai.Configure);
+
                 // 缺陷系统改的是「所有角色共享的 1 级进度表」，必须走 BlueprintCore 的延迟配置
                 // 才不会被后续蓝图加载覆盖。这里立刻应用一次，不依赖 LoadPackTOC 的调用顺序。
                 if (ModSettings.EnableDrawbacks) {
