@@ -50,6 +50,12 @@ internal static class Iaijutsu {
     private const string FeatureName = "拔刀术";
 
     /// <summary>
+    /// 职业特性名。规则里武士 1 级特性写作「拔刀斩」，其效果就是习得「拔刀术」能力，
+    /// 所以特性与能力分两个名字：职业面板显示「拔刀斩」，能力栏里是可主动使用的「拔刀术」。
+    /// </summary>
+    private const string ClassFeatureName = "拔刀斩";
+
+    /// <summary>
     /// 图标借原版「偷袭」的 —— 拔刀术与偷袭同为精准伤害，且共用同一套免疫判定，
     /// 视觉上让玩家能一眼联想到「精准、偷袭类」效果。
     /// </summary>
@@ -159,8 +165,9 @@ internal static class Iaijutsu {
 
     private static void ConfigureFeature() {
         FeatureConfigurator.New("OaSamuraiIaijutsuFeature", FeatureGuid)
-            .SetDisplayName(LocalizationTool.CreateString("Iaijutsu.Feature.Name", FeatureName))
-            .SetDescription(LocalizationTool.CreateString("Iaijutsu.Feature.Description", Description))
+            .SetDisplayName(LocalizationTool.CreateString("Iaijutsu.Feature.Name", ClassFeatureName))
+            .SetDescription(LocalizationTool.CreateString("Iaijutsu.Feature.Description",
+                "经过严苛的训练，你习得了拔刀术这一能力。\n\n" + Description))
             .SetIcon(Icon())
             .SetIsClassFeature()
             .AddFacts(new List<Blueprint<BlueprintUnitFactReference>> {
