@@ -212,9 +212,22 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
         int flatBonus = part.DiceCount * part.FlatBonusPerDie;
 
         BaseDamage damage = typeDescription
-            .GetDamageDescriptor(new DiceFormula(part.DiceCount, DiceType.D6), flatBonus)
+            .GetDamageDescriptor(new DiceFormula(part.DiceCount, DiceType.D6), 0)
             .CreateDamage();
         damage.Precision = true;
+
+        // ⚠ 精准伤害的固定加值**不能**走 BaseDamage.Bonus。
+        // 原因：RuleCalculateDamage.CalculateDamageValue 开头就是
+        //     if (damage.Precision) { damage.ResetBonus(); }
+        // 而 ResetBonus() 只做两件事：Bonus = 0、m_Modifiers.Clear()。
+        // 走 Bonus 的加值会在这一刻被清零，玩家看到的就只有 N d6，虚空斩等于没生效。
+        //
+        // 绕过办法：改用 AddModifierTargetRelated()，它累加的是 BonusTargetRelated，
+        // 而 ResetBonus **不会**清这个字段；CalculateDamageValue 后面又会把
+        // BonusTargetRelated 加进最终伤害，所以这部分能活着走到结算。
+        if (flatBonus > 0 && base.Fact != null) {
+            damage.AddModifierTargetRelated(flatBonus, base.Fact);
+        }
 
         evt.Add(damage);
     }
