@@ -80,7 +80,7 @@ internal static class IaijutsuFeats {
             .SetDescription(LocalizationTool.CreateString("QuickDraw.Description",
                 "你可以使用迅捷动作进行拔刀术。"))
             .SetIcon(Icon())
-            .OnConfigure(bp => { bp.Groups = new[] { FeatureGroup.Feat, FeatureGroup.CombatFeat }; })
+            .OnConfigure(bp => { bp.Groups = new[] { FeatureGroup.Feat }; })
             .Configure();
     }
 
@@ -108,7 +108,7 @@ internal static class IaijutsuFeats {
             .SetDescription(LocalizationTool.CreateString("IaijutsuWeaponFocus.Description",
                 "当你使用拔刀术时，拔刀术检定获得 +" + WeaponFocusBonus + " 加值。"))
             .SetIcon(Icon())
-            .OnConfigure(bp => { bp.Groups = new[] { FeatureGroup.Feat, FeatureGroup.CombatFeat }; })
+            .OnConfigure(bp => { bp.Groups = new[] { FeatureGroup.Feat }; })
             .Configure();
     }
 
@@ -131,33 +131,26 @@ internal static class IaijutsuFeats {
     // ---------- 注册进各个专长池 ----------
 
     /// <summary>
-    /// 全部走延迟配置：这三张表都是全局共享的，必须在所有蓝图加载完成后再改，
-    /// 否则会被后续加载覆盖（与缺陷系统同一处理，见 <see cref="Drawbacks"/>）。
+    /// 注册进各个专长池。
+    ///
+    /// <para>
+    /// 走 <see cref="FeatPools"/> 的同步注册，与 mod 里其它专长保持同一套写法。
+    /// 之前这里用的是延迟配置（<c>Configure(false)</c>），与其它专长不一致，
+    /// 也是「专长在选择页面出现两份」的可疑来源之一。
+    /// </para>
     /// </summary>
     private static void RegisterInFeatLists(
             BlueprintFeature quickDraw, BlueprintFeature mythicQuickDraw,
             BlueprintFeature weaponFocus, BlueprintFeature mythicWeaponFocus) {
         // 战士奖励专长池：快速拔刀术 + 拔刀专精
-        FeatureSelectionConfigurator.For(
-                BlueprintTool.GetRef<Kingmaker.Blueprints.BlueprintFeatureSelectionReference>(
-                    FighterFeatSelectionGuid))
-            .AddToAllFeatures(quickDraw, weaponFocus)
-            .Configure(false);
+        FeatPools.AddToFighterFeats(quickDraw, weaponFocus);
 
         // 普通专长池：快速拔刀术（通用专长）
-        FeatureSelectionConfigurator.For(
-                BlueprintTool.GetRef<Kingmaker.Blueprints.BlueprintFeatureSelectionReference>(
-                    BasicFeatSelectionGuid))
-            .AddToAllFeatures(quickDraw)
-            .Configure(false);
+        FeatPools.AddToBasicFeats(quickDraw);
 
         // 神话专长池：两个神话版
-        FeatureSelectionConfigurator.For(
-                BlueprintTool.GetRef<Kingmaker.Blueprints.BlueprintFeatureSelectionReference>(
-                    MythicFeatSelectionGuid))
-            .AddToAllFeatures(mythicQuickDraw, mythicWeaponFocus)
-            .Configure(false);
+        FeatPools.AddToMythicFeats(mythicQuickDraw, mythicWeaponFocus);
 
-        Main.Log?.Log("[拔刀术专长] 已注册 4 个专长并排入延迟配置队列");
+        Main.Log?.Log("[拔刀术专长] 已注册 4 个专长到各自的专长池");
     }
 }
