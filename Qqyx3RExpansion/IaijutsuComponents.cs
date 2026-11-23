@@ -51,7 +51,7 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
     public int DiceCount;
 
     /// <summary>
-    /// 拔刀师职业引用。拔刀师 5 级起获得「虚空斩」：拔刀术伤害的**每个骰子**额外 +魅力调整值。
+    /// 虚空斩（拔刀师 5 级特性）：拔刀术伤害的**每个骰子**额外 +魅力调整值。
     ///
     /// <para>
     /// 数学上等价于固定加值：N d(6+Cha) = N d6 + N×Cha。
@@ -60,11 +60,15 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
     /// </para>
     ///
     /// <para>
-    /// 用「拔刀师职业等级 ≥ 5」判断，而不是引用虚空斩特性蓝图 ——
-    /// 拔刀术在拔刀师之前注册，用特性引用会产生注册顺序依赖；职业 GUID 是常量，随时可用。
+    /// 判断依据是「身上有没有虚空斩这个特性」，**不是**「拔刀师职业等级 ≥ 5」。
+    /// 后者会让控制台/存档工具单独添加的特性失效，也让兼职等其它获取途径失效。
+    /// 这个字段在拔刀术创建时用 GUID 包装（不解析），所以不存在注册顺序问题。
     /// </para>
     /// </summary>
-    public BlueprintCharacterClassReference IaijutsuMasterClass;
+    public BlueprintFeatureReference StrikeFromTheVoid;
+
+    /// <summary>心无凝滞（拔刀师 10 级特性）：拔刀术检定 +10。同样按特性是否存在判断。</summary>
+    public BlueprintFeatureReference StrikeWithNoThought;
 
     /// <summary>拔刀专精：拔刀术检定 +4。为空则表示没有这个专长。</summary>
     public BlueprintFeatureReference IaijutsuWeaponFocus;
@@ -101,9 +105,8 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
             int extra = 0;
             string extraText = "";
 
-            // 心无凝滞：拔刀师 10 级特性，检定 +10
-            var masterClass = IaijutsuMasterClass == null ? null : IaijutsuMasterClass.Get();
-            if (masterClass != null && owner.Progression.GetClassLevel(masterClass) >= 10) {
+            // 心无凝滞：检定 +10（按特性是否存在判断，控制台单独添加也生效）
+            if (HasFeature(StrikeWithNoThought)) {
                 extra += IaijutsuMaster.StrikeWithNoThoughtBonus;
                 extraText += " + 心无凝滞 " + IaijutsuMaster.StrikeWithNoThoughtBonus;
             }
@@ -184,8 +187,7 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
 
         // 虚空斩：每个骰子额外 +魅力调整值（= 骰数 × 魅力加值的固定伤害）
         int flatBonus = 0;
-        var masterClass = IaijutsuMasterClass == null ? null : IaijutsuMasterClass.Get();
-        if (masterClass != null && base.Owner.Progression.GetClassLevel(masterClass) >= 5) {
+        if (HasFeature(StrikeFromTheVoid)) {
             flatBonus = DiceCount * Math.Max(0, base.Owner.Stats.Charisma.Bonus);
         }
 

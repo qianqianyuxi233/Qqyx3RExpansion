@@ -110,9 +110,12 @@ internal static class Iaijutsu {
             })
             .AddComponent(new IaijutsuFocusDamage {
                 name = "$Iaijutsu$Damage",
-                // 拔刀师 5 级起自动获得「虚空斩」（每骰 + 魅力），见组件注释
-                IaijutsuMasterClass = BlueprintTool.GetRef<BlueprintCharacterClassReference>(
-                    IaijutsuMaster.ClassGuid),
+                // 拔刀师的两个特性：按「身上有没有这个特性」判断，
+                // 所以控制台/存档工具单独添加、或者其它途径获得，都能正常生效。
+                StrikeFromTheVoid = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                    IaijutsuMaster.StrikeFromTheVoidGuid),
+                StrikeWithNoThought = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                    IaijutsuMaster.StrikeWithNoThoughtGuid),
                 // 拔刀专精系列的检定加值（真正叠加发生在 IaijutsuFocusDamage.RollIfNeeded）
                 IaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
                     IaijutsuFeats.WeaponFocusGuid),

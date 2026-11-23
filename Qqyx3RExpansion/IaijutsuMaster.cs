@@ -61,8 +61,11 @@ internal static class IaijutsuMaster {
 
     private const string CannyDefenseGuid = "80fcaba3745e4291a4c44e4011357f16";
     private const string LightningBladeGuid = "6b5eddc581bc4f02981209352931fa4b";
-    private const string StrikeFromTheVoidGuid = "1b9b393b5a234ad499eca5a37a3f93a9";
-    private const string StrikeWithNoThoughtGuid = "a6c741f7e40742cc9b3dfa35f30a29b7";
+    // 这两个特性由 IaijutsuFocusDamage 直接按「身上有没有这个特性」判断，
+    // 所以 GUID 必须是 internal：控制台/存档工具单独塞进来的特性也要能生效，
+    // 不能依赖「拔刀师职业等级」这种间接条件。
+    internal const string StrikeFromTheVoidGuid = "1b9b393b5a234ad499eca5a37a3f93a9";
+    internal const string StrikeWithNoThoughtGuid = "a6c741f7e40742cc9b3dfa35f30a29b7";
     private const string OneStrikeTwoCutsFeatureGuid = "691a5aa9416747bab4ff25eba34aec48";
     private const string OneStrikeTwoCutsAbilityGuid = "e6ddda258ea94b868ffd01cf2dc8e34d";
 
@@ -158,8 +161,9 @@ internal static class IaijutsuMaster {
 
     // ---------- 4. 5 级：虚空斩 ----------
     //
-    // 这个特性本身没有组件：伤害加成由 IaijutsuFocusDamage 按「拔刀师职业等级 ≥ 5」判断，
-    // 这样不会产生「拔刀术先注册、拔刀师后注册」的顺序依赖。保留特性只是为了职业面板有显示。
+    // 这个特性本身没有组件：伤害加成由 IaijutsuFocusDamage 按「身上有没有虚空斩特性」判断，
+    // 所以控制台/存档工具单独添加、或其它途径获得，都能正常生效。
+    // 保留特性只是为了职业面板有显示。
 
     private static BlueprintFeature ConfigureStrikeFromTheVoid() {
         return FeatureConfigurator.New("IaijutsuMasterStrikeFromTheVoid", StrikeFromTheVoidGuid)
@@ -210,8 +214,8 @@ internal static class IaijutsuMaster {
 
     // ---------- 5b. 10 级：心无凝滞 ----------
     //
-    // 与虚空斩一样：特性本身没有组件，检定 +10 由 IaijutsuFocusDamage 按「拔刀师等级 ≥ 10」判断，
-    // 避免注册顺序依赖。保留特性是为了职业面板有显示。
+    // 与虚空斩一样：特性本身没有组件，检定 +10 由 IaijutsuFocusDamage 按
+    // 「身上有没有心无凝滞特性」判断，不依赖职业等级。保留特性是为了职业面板有显示。
 
     private static BlueprintFeature ConfigureStrikeWithNoThought() {
         return FeatureConfigurator.New("IaijutsuMasterStrikeWithNoThought", StrikeWithNoThoughtGuid)
