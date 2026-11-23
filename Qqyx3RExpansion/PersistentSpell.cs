@@ -110,7 +110,7 @@ internal static class PersistentSpell {
     /// 先决条件换成「法术延时」。
     /// </summary>
     private static BlueprintFeature ConfigureFeat() {
-        return FeatureConfigurator.New("PersistentSpell3R", FeatGuid)
+        return FeatureConfigurator.New("PersistentSpell3R", FeatGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("PersistentSpell3R.Name", FeatName))
             .SetDescription(LocalizationTool.CreateString("PersistentSpell3R.Description", FeatDescription))
             // 图标照抄原版「超魔（法术顽强）」

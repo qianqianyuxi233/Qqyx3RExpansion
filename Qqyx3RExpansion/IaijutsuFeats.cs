@@ -75,7 +75,7 @@ internal static class IaijutsuFeats {
     // ---------- 快速拔刀术 ----------
 
     private static BlueprintFeature ConfigureQuickDraw() {
-        return FeatureConfigurator.New("QuickDraw", QuickDrawGuid)
+        return FeatureConfigurator.New("QuickDraw", QuickDrawGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("QuickDraw.Name", "快速拔刀术"))
             .SetDescription(LocalizationTool.CreateString("QuickDraw.Description",
                 "你可以使用迅捷动作进行拔刀术。"))
@@ -87,7 +87,7 @@ internal static class IaijutsuFeats {
     // ---------- 快速拔刀术（神话）----------
 
     private static BlueprintFeature ConfigureMythicQuickDraw(BlueprintFeature quickDraw) {
-        return FeatureConfigurator.New("MythicQuickDraw", MythicQuickDrawGuid)
+        return FeatureConfigurator.New("MythicQuickDraw", MythicQuickDrawGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("MythicQuickDraw.Name", "快速拔刀术（神话）"))
             .SetDescription(LocalizationTool.CreateString("MythicQuickDraw.Description",
                 "你可以在自己的回合用自由动作进行拔刀术。"))
@@ -103,7 +103,7 @@ internal static class IaijutsuFeats {
     // ---------- 拔刀专精 ----------
 
     private static BlueprintFeature ConfigureWeaponFocus() {
-        return FeatureConfigurator.New("IaijutsuWeaponFocus", WeaponFocusGuid)
+        return FeatureConfigurator.New("IaijutsuWeaponFocus", WeaponFocusGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("IaijutsuWeaponFocus.Name", "拔刀专精"))
             .SetDescription(LocalizationTool.CreateString("IaijutsuWeaponFocus.Description",
                 "当你使用拔刀术时，拔刀术检定获得 +" + WeaponFocusBonus + " 加值。"))
@@ -115,7 +115,7 @@ internal static class IaijutsuFeats {
     // ---------- 拔刀专精（神话）----------
 
     private static BlueprintFeature ConfigureMythicWeaponFocus(BlueprintFeature weaponFocus) {
-        return FeatureConfigurator.New("MythicIaijutsuWeaponFocus", MythicWeaponFocusGuid)
+        return FeatureConfigurator.New("MythicIaijutsuWeaponFocus", MythicWeaponFocusGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("MythicIaijutsuWeaponFocus.Name", "拔刀专精（神话）"))
             .SetDescription(LocalizationTool.CreateString("MythicIaijutsuWeaponFocus.Description",
                 "当你使用拔刀术时，拔刀术检定额外获得 +" + MythicWeaponFocusBonus + " 加值。"))

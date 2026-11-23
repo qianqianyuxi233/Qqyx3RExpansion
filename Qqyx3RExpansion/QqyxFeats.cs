@@ -97,7 +97,7 @@ internal static class QqyxFeats {
         // 图标借「剑术优雅」—— 不和前置的武器娴熟撞图
         var iconSource = BlueprintTool.Get<BlueprintFeature>(ShadowBladeIconGuid);
 
-        return FeatureConfigurator.New("ShadowBlade", ShadowBladeGuid)
+        return FeatureConfigurator.New("ShadowBlade", ShadowBladeGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("ShadowBlade.Name", "影之刃"))
             .SetDescription(LocalizationTool.CreateString("ShadowBlade.Description",
                 "当你手持娴熟武器、并以「武器娴熟」的方式攻击时，"
@@ -138,7 +138,7 @@ internal static class QqyxFeats {
             })
             .Configure();
 
-        return FeatureConfigurator.New("WoodlandArcher", WoodlandArcherGuid)
+        return FeatureConfigurator.New("WoodlandArcher", WoodlandArcherGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("WoodlandArcher.Name", "森林射手"))
             .SetDescription(LocalizationTool.CreateString("WoodlandArcher.Description",
                 "你获得「距离修正」战术机动：\n"
@@ -223,7 +223,7 @@ internal static class QqyxFeats {
             .SetIsOnByDefault(false)
             .Configure();
 
-        return FeatureConfigurator.New("RecklessCharge", RecklessChargeGuid)
+        return FeatureConfigurator.New("RecklessCharge", RecklessChargeGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("RecklessCharge.Name", "突击尖兵"))
             .SetDescription(LocalizationTool.CreateString("RecklessCharge.Description",
                 "你获得「轻率冲锋」战术机动：\n"
@@ -327,7 +327,7 @@ internal static class QqyxFeats {
             })
             .Configure();
 
-        return FeatureConfigurator.New("GreenboundSummoning", GreenboundSummoningGuid)
+        return FeatureConfigurator.New("GreenboundSummoning", GreenboundSummoningGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("GreenboundSummoning.Name", "绿缚召唤"))
             .SetDescription(LocalizationTool.CreateString("GreenboundSummoning.Description",
                 "你以「召唤自然盟友」召来的生物，在召唤法术持续期间获得绿缚模板：\n"

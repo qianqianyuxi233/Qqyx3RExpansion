@@ -32,7 +32,7 @@ internal static class ExtraTurning3R {
     internal static void Configure() {
         var source = BlueprintTool.Get<BlueprintFeature>(ExtraChannelGuid);
 
-        var feat = FeatureConfigurator.New("ExtraTurning3R", FeatGuid)
+        var feat = FeatureConfigurator.New("ExtraTurning3R", FeatGuid).SkipAddToSelections()
             .SetDisplayName(LocalizationTool.CreateString("ExtraTurning3R.Name", "额外驱散（3r）"))
             .SetDescription(LocalizationTool.CreateString("ExtraTurning3R.Description",
                 "你可以比平常更频繁地驱散或斥喝不死生物。\n"
