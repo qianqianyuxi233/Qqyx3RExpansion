@@ -123,13 +123,15 @@ public static class Main {
 
                 // OA武士 是新的基础职业：先建拔刀术（1 级特性引用它），再建职业本体。
                 ConfigureSafely("拔刀术", Iaijutsu.Configure);
-                ConfigureSafely("OA武士（新基础职业）", OaSamurai.Configure);
+                ConfigureSafely("武士（新基础职业）", OaSamurai.Configure);
+                // 拔刀师是进阶职业，前提要用到拔刀术与快速拔刀
+                ConfigureSafely("拔刀师（进阶职业）", IaijutsuMaster.Configure);
 
-                // 缺陷系统改的是「所有角色共享的 1 级进度表」，必须走 BlueprintCore 的延迟配置
-                // 才不会被后续蓝图加载覆盖。这里立刻应用一次，不依赖 LoadPackTOC 的调用顺序。
-                if (ModSettings.EnableDrawbacks) {
-                    ApplyDelayedBlueprints();
-                }
+                // 延迟配置队列里既有缺陷系统（改共享的 1 级进度表），
+                // 也有拔刀师注册「快速拔刀」专长（改共享的普通专长表）。
+                // 两者都必须在所有蓝图加载完成后统一应用一次，所以这里无条件调用；
+                // 队列为空时它是空操作（幂等）。
+                ApplyDelayedBlueprints();
 
             } catch (Exception e) {
                 Log.Log(string.Concat("Failed to initialize.", e));
@@ -199,8 +201,9 @@ public static class Main {
         [HarmonyPostfix]
         [HarmonyPatch("LoadPackTOC")]
         public static void LoadPackTOC_Postfix() {
-            // 关闭缺陷系统时，完全不去动延迟配置队列，避免任何全局副作用。
-            if (!ModSettings.EnableDrawbacks) return;
+            // 延迟配置队列里既有缺陷系统（改共享的 1 级进度表），
+            // 也有拔刀师注册「快速拔刀」专长（改共享的普通专长表）。
+            // 所以这里不能再按缺陷开关直接 return —— 关闭缺陷时那批修改仍然要应用。
             try {
                 ApplyDelayedBlueprints();
                 Log?.Log("[蓝图] 已应用延迟配置");

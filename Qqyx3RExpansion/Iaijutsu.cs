@@ -108,7 +108,12 @@ internal static class Iaijutsu {
                 // 重复使用能力时先移除旧 buff 再加新的 —— 每次都会重新触发 OnActivate 重新掷检。
                 bp.Stacking = StackingType.Replace;
             })
-            .AddComponent(new IaijutsuFocusDamage { name = "$Iaijutsu$Damage" })
+            .AddComponent(new IaijutsuFocusDamage {
+                name = "$Iaijutsu$Damage",
+                // 拔刀师 5 级起自动获得「虚空斩」（每骰 + 魅力），见组件注释
+                IaijutsuMasterClass = BlueprintTool.GetRef<BlueprintCharacterClassReference>(
+                    IaijutsuMaster.ClassGuid),
+            })
             .Configure();
     }
 

@@ -51,6 +51,22 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
     public int DiceCount;
 
     /// <summary>
+    /// 拔刀师职业引用。拔刀师 5 级起获得「虚空斩」：拔刀术伤害的**每个骰子**额外 +魅力调整值。
+    ///
+    /// <para>
+    /// 数学上等价于固定加值：N d(6+Cha) = N d6 + N×Cha。
+    /// 所以这里只需要把 <c>DiceCount × 魅力调整值</c> 当作 <c>GetDamageDescriptor</c> 的固定加值，
+    /// 不必真的去改骰面。
+    /// </para>
+    ///
+    /// <para>
+    /// 用「拔刀师职业等级 ≥ 5」判断，而不是引用虚空斩特性蓝图 ——
+    /// 拔刀术在拔刀师之前注册，用特性引用会产生注册顺序依赖；职业 GUID 是常量，随时可用。
+    /// </para>
+    /// </summary>
+    public BlueprintCharacterClassReference IaijutsuMasterClass;
+
+    /// <summary>
     /// 已经掷过骰的标记。buff 被 Replace 时是新的运行时对象（字段重新为 false），
     /// 所以每次重新使用能力都会重掷；读档时字段丢失，靠 <see cref="OnPostLoad"/> 补掷。
     /// </summary>
@@ -131,8 +147,15 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
         DamageTypeDescription typeDescription = first.CreateTypeDescription();
         if (typeDescription == null) return;
 
+        // 虚空斩：每个骰子额外 +魅力调整值（= 骰数 × 魅力加值的固定伤害）
+        int flatBonus = 0;
+        var masterClass = IaijutsuMasterClass == null ? null : IaijutsuMasterClass.Get();
+        if (masterClass != null && base.Owner.Progression.GetClassLevel(masterClass) >= 5) {
+            flatBonus = DiceCount * Math.Max(0, base.Owner.Stats.Charisma.Bonus);
+        }
+
         BaseDamage damage = typeDescription
-            .GetDamageDescriptor(new DiceFormula(DiceCount, DiceType.D6), 0)
+            .GetDamageDescriptor(new DiceFormula(DiceCount, DiceType.D6), flatBonus)
             .CreateDamage();
         damage.Precision = true;
 
