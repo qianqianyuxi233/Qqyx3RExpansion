@@ -66,6 +66,12 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
     /// </summary>
     public BlueprintCharacterClassReference IaijutsuMasterClass;
 
+    /// <summary>拔刀专精：拔刀术检定 +4。为空则表示没有这个专长。</summary>
+    public BlueprintFeatureReference IaijutsuWeaponFocus;
+
+    /// <summary>拔刀专精（神话）：拔刀术检定额外 +6（与普通版叠加）。</summary>
+    public BlueprintFeatureReference MythicIaijutsuWeaponFocus;
+
     /// <summary>
     /// 已经掷过骰的标记。buff 被 Replace 时是新的运行时对象（字段重新为 false），
     /// 所以每次重新使用能力都会重掷；读档时字段丢失，靠 <see cref="OnPostLoad"/> 补掷。
@@ -87,11 +93,32 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
         m_Rolled = true;
 
         try {
-            // d20 + 角色等级 + 魅力调整值
+            // d20 + 角色等级 + 魅力调整值 + 各种检定加值
             int d20 = Rulebook.Trigger(new RuleRollD20(owner)).Result;
             int level = owner.Progression.CharacterLevel;
             int charisma = owner.Stats.Charisma.Bonus;
-            int total = d20 + level + charisma;
+
+            int extra = 0;
+            string extraText = "";
+
+            // 心无凝滞：拔刀师 10 级特性，检定 +10
+            var masterClass = IaijutsuMasterClass == null ? null : IaijutsuMasterClass.Get();
+            if (masterClass != null && owner.Progression.GetClassLevel(masterClass) >= 10) {
+                extra += IaijutsuMaster.StrikeWithNoThoughtBonus;
+                extraText += " + 心无凝滞 " + IaijutsuMaster.StrikeWithNoThoughtBonus;
+            }
+
+            // 拔刀专精 / 拔刀专精（神话）：两者叠加
+            if (HasFeature(IaijutsuWeaponFocus)) {
+                extra += IaijutsuFeats.WeaponFocusBonus;
+                extraText += " + 拔刀专精 " + IaijutsuFeats.WeaponFocusBonus;
+            }
+            if (HasFeature(MythicIaijutsuWeaponFocus)) {
+                extra += IaijutsuFeats.MythicWeaponFocusBonus;
+                extraText += " + 拔刀专精（神话） " + IaijutsuFeats.MythicWeaponFocusBonus;
+            }
+
+            int total = d20 + level + charisma + extra;
 
             DiceCount = DiceForResult(total);
 
@@ -101,6 +128,7 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
             string text = "拔刀术检定：d20 " + d20
                 + " + 等级 " + level
                 + " + 魅力 " + charisma
+                + extraText
                 + " = " + total + "，" + effect + "。";
 
             EventBus.RaiseEvent<ILogMessageUIHandler>(h => h.HandleLogMessage(text));
@@ -108,6 +136,13 @@ public class IaijutsuFocusDamage : UnitFactComponentDelegate,
         } catch (Exception e) {
             Main.Log?.Log("[拔刀术] 检定失败：" + e);
         }
+    }
+
+    /// <summary>检查 owner 是否拥有某个特性；引用为空时视为没有。</summary>
+    private bool HasFeature(BlueprintFeatureReference reference) {
+        if (reference == null) return false;
+        var feature = reference.Get();
+        return feature != null && base.Owner.HasFact(feature);
     }
 
     /// <summary>

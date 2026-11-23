@@ -121,7 +121,8 @@ public static class Main {
                 //    之后注册的法术就进不了卷宗学者的法术书。
                 ConfigureSafely("卷宗学者", Archivist.Configure);
 
-                // OA武士 是新的基础职业：先建拔刀术（1 级特性引用它），再建职业本体。
+                // 武士 是新的基础职业：先建拔刀术专长与拔刀术，再建职业本体。
+                ConfigureSafely("拔刀术专长（快速拔刀 / 拔刀专精，含神话版）", IaijutsuFeats.Configure);
                 ConfigureSafely("拔刀术", Iaijutsu.Configure);
                 ConfigureSafely("武士（新基础职业）", OaSamurai.Configure);
                 // 拔刀师是进阶职业，前提要用到拔刀术与快速拔刀

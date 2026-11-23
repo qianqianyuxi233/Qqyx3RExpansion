@@ -46,9 +46,9 @@ namespace Qqyx3RExpansion;
 /// </para>
 ///
 /// <para>
-/// <b>心无凝滞（10 级）未实现</b>：规则是「进入战斗时若近战范围内有敌人，自动获得突袭轮」。
-/// 游戏里突袭轮是遭遇开始、未察觉状态下的独立阶段，战斗一旦开始就没有「追加一个突袭轮」的入口，
-/// 没有可靠的实现点，按用户意见放弃。
+/// <b>心无凝滞（10 级）</b>：原规则是「进入战斗时若近战范围内有敌人，自动获得突袭轮」——
+/// 突袭轮是遭遇开始、未察觉状态下的独立阶段，战斗一旦开始就没有「追加一个突袭轮」的入口，
+/// 引擎里没有可靠的实现点。按用户要求改为「进行拔刀术检定时 +10 加值」。
 /// </para>
 /// </summary>
 internal static class IaijutsuMaster {
@@ -62,8 +62,12 @@ internal static class IaijutsuMaster {
     private const string CannyDefenseGuid = "80fcaba3745e4291a4c44e4011357f16";
     private const string LightningBladeGuid = "6b5eddc581bc4f02981209352931fa4b";
     private const string StrikeFromTheVoidGuid = "1b9b393b5a234ad499eca5a37a3f93a9";
+    private const string StrikeWithNoThoughtGuid = "a6c741f7e40742cc9b3dfa35f30a29b7";
     private const string OneStrikeTwoCutsFeatureGuid = "691a5aa9416747bab4ff25eba34aec48";
     private const string OneStrikeTwoCutsAbilityGuid = "e6ddda258ea94b868ffd01cf2dc8e34d";
+
+    /// <summary>心无凝滞：拔刀术检定加值。具体叠加在 <c>IaijutsuFocusDamage.RollIfNeeded</c> 里做。</summary>
+    internal const int StrikeWithNoThoughtBonus = 10;
 
     // ---------- 原版参照 ----------
 
@@ -93,35 +97,18 @@ internal static class IaijutsuMaster {
     }
 
     internal static void Configure() {
-        // 快速拔刀是进阶前提，必须让玩家先能选到它
-        var quickDraw = QuickDrawFeat.Configure();
-        RegisterQuickDrawInFeatList(quickDraw);
-
         var proficiencies = ConfigureProficiencies();
         var cannyDefense = ConfigureCannyDefense();
         var lightningBlade = ConfigureLightningBlade();
         var strikeFromTheVoid = ConfigureStrikeFromTheVoid();
         var oneStrikeTwoCuts = ConfigureOneStrikeTwoCuts();
+        var strikeWithNoThought = ConfigureStrikeWithNoThought();
 
         var progression = ConfigureProgression(
-            proficiencies, cannyDefense, lightningBlade, strikeFromTheVoid, oneStrikeTwoCuts);
-        var charClass = ConfigureClass(progression, quickDraw);
+            proficiencies, cannyDefense, lightningBlade, strikeFromTheVoid,
+            oneStrikeTwoCuts, strikeWithNoThought);
+        var charClass = ConfigureClass(progression);
         RegisterInCharacterCreation(charClass);
-    }
-
-    // ---------- 0. 把「快速拔刀」放进普通专长列表 ----------
-
-    /// <summary>
-    /// 加进 <c>BasicFeatSelection</c>（角色升级时选专长的那张表）。
-    /// 用延迟配置：这张表是全局共享的，必须在所有蓝图加载完成后再改，
-    /// 否则会被后续加载覆盖（与缺陷系统同一处理，见 <see cref="Drawbacks"/>）。
-    /// </summary>
-    private static void RegisterQuickDrawInFeatList(BlueprintFeature quickDraw) {
-        FeatureSelectionConfigurator.For(FeatureSelectionRefs.BasicFeatSelection)
-            .AddToAllFeatures(quickDraw)
-            .Configure(false);
-
-        Main.Log?.Log("[拔刀师] 快速拔刀已加入普通专长列表（延迟配置）");
     }
 
     // ---------- 1. 武器熟练（无护甲、无盾牌）----------
@@ -221,6 +208,21 @@ internal static class IaijutsuMaster {
             .Configure();
     }
 
+    // ---------- 5b. 10 级：心无凝滞 ----------
+    //
+    // 与虚空斩一样：特性本身没有组件，检定 +10 由 IaijutsuFocusDamage 按「拔刀师等级 ≥ 10」判断，
+    // 避免注册顺序依赖。保留特性是为了职业面板有显示。
+
+    private static BlueprintFeature ConfigureStrikeWithNoThought() {
+        return FeatureConfigurator.New("IaijutsuMasterStrikeWithNoThought", StrikeWithNoThoughtGuid)
+            .SetDisplayName(LocalizationTool.CreateString("IaijutsuMaster.StrikeWithNoThought.Name", "心无凝滞"))
+            .SetDescription(LocalizationTool.CreateString("IaijutsuMaster.StrikeWithNoThought.Description",
+                "从 10 级起，你进行拔刀术检定时获得 +" + StrikeWithNoThoughtBonus + " 加值。"))
+            .SetIcon(Icon())
+            .SetIsClassFeature()
+            .Configure();
+    }
+
     // ---------- 6. 等级进度 ----------
 
     private static BlueprintProgression ConfigureProgression(
@@ -228,7 +230,8 @@ internal static class IaijutsuMaster {
             BlueprintFeature cannyDefense,
             BlueprintFeature lightningBlade,
             BlueprintFeature strikeFromTheVoid,
-            BlueprintFeature oneStrikeTwoCuts) {
+            BlueprintFeature oneStrikeTwoCuts,
+            BlueprintFeature strikeWithNoThought) {
         var fighterFeats = BlueprintTool.Get<BlueprintFeatureSelection>(FighterFeatSelectionGuid);
 
         return ProgressionConfigurator.New("IaijutsuMasterProgression", ProgressionGuid)
@@ -241,6 +244,7 @@ internal static class IaijutsuMaster {
             // 表里第二个「9」按正文「8 级或以上」理解为 8 级
             .AddToLevelEntry(8, oneStrikeTwoCuts)
             .AddToLevelEntry(9, fighterFeats)
+            .AddToLevelEntry(10, strikeWithNoThought)
             .SetIsClassFeature(true)
             .SetRanks(1)
             .SetDisplayName("")
@@ -250,10 +254,10 @@ internal static class IaijutsuMaster {
 
     // ---------- 7. 职业本体 ----------
 
-    private static BlueprintCharacterClass ConfigureClass(
-            BlueprintProgression progression, BlueprintFeature quickDraw) {
+    private static BlueprintCharacterClass ConfigureClass(BlueprintProgression progression) {
         var improvedInitiative = BlueprintTool.Get<BlueprintFeature>(ImprovedInitiativeGuid);
         var iaijutsu = BlueprintTool.Get<BlueprintFeature>(Iaijutsu.FeatureGuid);
+        var quickDraw = BlueprintTool.Get<BlueprintFeature>(IaijutsuFeats.QuickDrawGuid);
 
         return CharacterClassConfigurator.New("IaijutsuMaster", ClassGuid)
             .SetLocalizedName(LocalizationTool.CreateString("IaijutsuMaster.Name", ClassName))

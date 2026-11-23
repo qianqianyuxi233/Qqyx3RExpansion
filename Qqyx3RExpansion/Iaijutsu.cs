@@ -113,6 +113,11 @@ internal static class Iaijutsu {
                 // 拔刀师 5 级起自动获得「虚空斩」（每骰 + 魅力），见组件注释
                 IaijutsuMasterClass = BlueprintTool.GetRef<BlueprintCharacterClassReference>(
                     IaijutsuMaster.ClassGuid),
+                // 拔刀专精系列的检定加值（真正叠加发生在 IaijutsuFocusDamage.RollIfNeeded）
+                IaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                    IaijutsuFeats.WeaponFocusGuid),
+                MythicIaijutsuWeaponFocus = BlueprintTool.GetRef<BlueprintFeatureReference>(
+                    IaijutsuFeats.MythicWeaponFocusGuid),
             })
             .Configure();
     }
