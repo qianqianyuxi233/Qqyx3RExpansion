@@ -205,6 +205,42 @@ internal static class Archivist {
             proficiencies, loreMastery, stillMind, bonusFeat);
         var charClass = ConfigureClass(progression, spellbook);
         RegisterInCharacterCreation(charClass);
+        AllowAngelSpellbookMerge();
+    }
+
+    // ---------- 8. 允许与天使道途合书 ----------
+
+    /// <summary>Classes/Mythic/Angel/AngelSpellbookSelection/AngelIncorporateSpellbook</summary>
+    private const string AngelIncorporateSpellbookGuid = "e1fbb0e0e610a3a4d91e5e5284587939";
+
+    /// <summary>
+    /// 把卷宗学者的法术书加入「天使道途合书」的白名单。
+    ///
+    /// <para>
+    /// 合书的判定在 <c>BlueprintFeatureSelectMythicSpellbook.AllowedSpellbooks</c>：
+    /// 只有当角色的职业法术书出现在这个数组里，玩家才能在道途选择时把天使法术书并进来。
+    /// 原版白名单只有牧师 / 十字军 / 先知 / 萨满 / 德鲁伊 / 妖精语者 / 圣火使徒，
+    /// 所以自建职业默认是无法合书的 —— 这不是 bug，是漏了登记。
+    /// </para>
+    ///
+    /// <para>
+    /// 卷宗学者是**准备式神术施法者**，与牧师同构，因此只加天使（神术合书），
+    /// 不加巫妖（那是奥术合书）。
+    /// </para>
+    ///
+    /// <para>
+    /// 用延迟配置：这张表是原版共享蓝图，必须在所有蓝图加载完成后再改，
+    /// 否则可能被后续加载覆盖。
+    /// </para>
+    /// </summary>
+    private static void AllowAngelSpellbookMerge() {
+        FeatureSelectMythicSpellbookConfigurator
+            .For(BlueprintTool.GetRef<BlueprintFeatureSelectMythicSpellbookReference>(
+                AngelIncorporateSpellbookGuid))
+            .AddToAllowedSpellbooks(BlueprintTool.GetRef<BlueprintSpellbookReference>(SpellbookGuid))
+            .Configure(false);
+
+        Main.Log?.Log("[卷宗学者] 已把卷宗表加入天使道途合书白名单（延迟配置）");
     }
 
     // ---------- 0. 卷宗表：所有神术职业法术表的并集 ----------
